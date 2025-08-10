@@ -237,6 +237,7 @@ const tableService = {
 
         const result = await scheduleService.create(weekLessons)
         console.log(result);
+        await scheduleService.searchBy(this.weekTitle, 'group', '09.02.07-4');
     },
 };
 
