@@ -2,7 +2,19 @@
   "name": "schedule-parser-college-kktd",
   "private": true,
   "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/index.js"
+  },
   "dependencies": {
+    "dotenv": "^17.2.1",
+    "mongoose": "^8.17.1",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
   }
 }
