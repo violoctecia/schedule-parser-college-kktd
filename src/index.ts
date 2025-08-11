@@ -1,17 +1,12 @@
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import tableService from '@/src/parser/tableService.ts';
-
-dotenv.config();
-
-const mongoUri = process.env.MONGO_URI;
-if (!mongoUri) {
-    throw new Error('MONGO_URI is not set in environment variables');
-}
+import tableService from '@/src/services/tableService.ts';
+import { cfg } from '@/src/config.ts';
+import { startBot } from '@/src/bot/index.js';
 
 mongoose
-    .connect(mongoUri)
-    .then(() => console.log('Connected to MongoDB'))
+    .connect(cfg.mongoURI)
+    .then(() => console.log('✅ Connected to MongoDB'))
     .catch((err) => console.error('MongoDB connection error:', err));
 
-tableService.load('uploads/example.xlsx');
+startBot()
+// tableService.load('uploads/example.xlsx');

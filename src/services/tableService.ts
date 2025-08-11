@@ -1,17 +1,7 @@
 import XLSX from 'xlsx';
 
-import type { Lesson, WeekLessons } from '@/src/types/schedule.ts';
-import { scheduleService } from '@/src/database/services/scheduleService.ts';
-
-type TableData = Record<string, string>;
-type MergeMap = Map<string, string>;
-type CellInfo = {
-    value: string;
-    startAddress: string;
-    endAddress: string;
-    startCol: string;
-    startRow: number;
-};
+import type { Lesson, WeekLessons, CellInfo, TableData, MergeMap } from '@/src/types/schedule.ts';
+import { scheduleService } from '@/src/modules/schedule/schedule.service.ts';
 
 const startPoints = {
     groups: 'F10',
@@ -29,6 +19,7 @@ const tableService = {
     groups: [] as CellInfo[],
     days: [] as CellInfo[],
     weekTitle: '',
+    groupsListCache: null as string[] | null,
 
     load(filePath: string) {
         console.log('✅ Start loading table from', filePath);
@@ -221,23 +212,44 @@ const tableService = {
     async fullParse() {
         this.findGroups();
         this.findDays();
+        this.resetGroupsCache();
 
         const weekLessons: WeekLessons = {
             lessons: [],
             weekTitle: this.weekTitle,
-        }
+        };
 
         const pairs = this.groups.flatMap(group =>
-            this.days.map(day => ({ group, day }))
+            this.days.map(day => ({ group, day })),
         );
-
         for (const { group, day } of pairs) {
             weekLessons.lessons.push(...this.parseDayLessonsFromGroup(day, group));
         }
 
-        const result = await scheduleService.create(weekLessons)
+        const result = await scheduleService.create(weekLessons);
         console.log(result);
-        await scheduleService.searchBy(this.weekTitle, 'group', '09.02.07-4');
+
+        // console.log(await scheduleService.searchBy(this.weekTitle, 'group', '09.02.07-1', true));
+        // this.groups.forEach(group => {
+        //     console.log(group.value);
+        // })
+    },
+
+    async getGroupsList() {
+        if (this.groupsListCache) {
+            console.log('✅ restore groupsListCache');
+            return this.groupsListCache;
+        }
+        if (this.groups.length) {
+            this.groupsListCache = this.groups.map(group => group.value);
+        } else {
+            this.groupsListCache = await scheduleService.findAllGroups();
+        }
+        return this.groupsListCache;
+    },
+
+    resetGroupsCache() {
+        this.groupsListCache = null;
     },
 };
 
