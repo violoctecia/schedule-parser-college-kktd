@@ -1,5 +1,5 @@
-import { WeekScheduleModel } from '@/src/modules/schedule/weekSchedule.model.ts';
-import type { Lesson, WeekLessons } from '@/src/types/schedule.ts';
+import { WeekScheduleModel } from '@/src/database/schedule/week-schedule.model.ts';
+import type { Lesson, ScheduleType, WeekLessons } from '@/src/types/schedule.ts';
 
 export const scheduleService = {
 
@@ -39,7 +39,7 @@ export const scheduleService = {
         return result;
     },
 
-    async findAllGroups(): Promise<string[]> {
+    async findAllByType(type: ScheduleType): Promise<string[]> {
         const weekSchedule = await WeekScheduleModel
             .findOne()
             .sort({ _id: -1 }); // берём последний добавленный документ
@@ -47,8 +47,32 @@ export const scheduleService = {
             console.log(`❌ No one week not found`);
             return [] as string[];
         }
+        return [...new Set(weekSchedule.lessons.map(l => l[type]))]
+    },
 
-        return [...new Set(weekSchedule.lessons.map(l => l.group))]
+    async findAllTeachers(): Promise<{ teacherId: string; teacher: string }[]> {
+        const weekSchedule = await WeekScheduleModel
+            .findOne()
+            .sort({ _id: -1 }); // берём последний добавленный документ
+
+        if (!weekSchedule) {
+            console.log(`❌ No one week not found`);
+            return [];
+        }
+
+        const uniqueMap = new Map<string, { teacherId: string; teacher: string }>();
+
+        for (const lesson of weekSchedule.lessons) {
+            if (lesson.teacherId && lesson.teacher) {
+                uniqueMap.set(lesson.teacherId, {
+                    teacherId: lesson.teacherId,
+                    teacher: lesson.teacher
+                });
+            }
+        }
+
+        return Array.from(uniqueMap.values());
     }
+
 
 };

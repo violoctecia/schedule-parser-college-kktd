@@ -1,99 +1,87 @@
-import { InlineKeyboard, Bot, Context } from 'grammy';
-import { showGroupMenu } from '@/src/bot/menus/groupMenu.ts';
-import { UserStates } from '@/src/bot/states.ts';
-import { userSelectionService } from '@/src/bot/services/userSelectionService.js';
+import { InlineKeyboard, Bot } from 'grammy';
+import { showListMenu } from '@/src/bot/menus/list.menu.ts';
+import { ScheduleType } from '@/src/types/schedule.ts';
+import { cacheService } from '@/src/services/cache.service.js';
 
-function withState(expectedState: string | string[] | RegExp, handler: (ctx: Context) => Promise<void>) {
-    return async (ctx: Context) => {
-        if (!ctx.callbackQuery) return;
-
-        let currentState = UserStates.get(ctx);
-
-        if (!currentState) {
-            UserStates.set(ctx, typeof expectedState === 'string' ? expectedState : '');
-            currentState = expectedState.toString();
-        }
-
-        const isMatch =
-            typeof expectedState === 'string'
-                ? currentState === expectedState
-                : expectedState instanceof RegExp
-                    ? expectedState.test(currentState)
-                    : expectedState.includes(currentState);
-
-        if (!isMatch) {
-            await ctx.answerCallbackQuery({
-                text: '⛔ Действие недоступно в текущем сеансе',
-            });
-            return;
-        }
-
-        await handler(ctx);
-    };
-}
+const listMenuTexts = {
+    group: '👥 Выберите группу из предложенных вариантов',
+    teacher: '👨‍🏫 Выберите преподавателя:',
+    audience: 'Выберите аудиторию:',
+    name: 'Выберите предмет:',
+};
 
 export function registerCallbacks(bot: Bot) {
-    bot.callbackQuery('continue', withState('continue', async (ctx) => {
+
+    // Select flow
+    bot.callbackQuery('select_flow_type', async (ctx) => {
         await ctx.editMessageText('Выберите тип расписания для поиска:', {
             reply_markup: new InlineKeyboard()
-                .text('👥 Поиск по группе', 'search_group')
+                .text('👥 Поиск по группе', 'show_groups')
                 .row()
-                .text('👨‍🏫 Поиск по преподователю', 'search_teacher')
+                .text('👨‍🏫 Поиск по преподователю', 'show_teachers')
                 .row()
-                .text('🏫 Поиск по аудитории', 'search_audience')
+                .text('🏫 Поиск по аудитории', 'show_audiences')
                 .row()
-                .text('📚 Поиск по предмету', 'search_subject'),
+                .text('📚 Поиск по предмету', 'show_subjects'),
         });
         await ctx.answerCallbackQuery();
-        UserStates.set(ctx, 'choose_search_type');
-    }));
+    });
 
-    bot.callbackQuery(/search_.+/, withState('choose_search_type', async (ctx) => {
+    // Show list
+    bot.callbackQuery(/show_.+/, async (ctx) => {
         if (!ctx.callbackQuery) return;
-        const choice = ctx.callbackQuery.data;
+        const type = ctx.callbackQuery.data;
 
-        switch (choice) {
-            case 'search_group':
-                await showGroupMenu(ctx, 0);
+        switch (type) {
+            case 'show_groups':
+                await showListMenu(ctx, 0, 'group', listMenuTexts.group);
                 await ctx.answerCallbackQuery();
-                UserStates.set(ctx, 'search_type_group');
-                break;
-            case 'search_teacher':
-            case 'search_audience':
-            case 'search_subject':
+                break
+            case 'show_teachers':
+                await showListMenu(ctx, 0, 'teacher', listMenuTexts.teacher);
+                await ctx.answerCallbackQuery();
+                break
+            case 'show_audiences':
+            case 'show_subjects':
         }
+    });
 
-    }));
-
-    bot.callbackQuery(/select_(group|teacher)_(.+)/, withState(/^search_type_/, async (ctx) => {
+    // Pick value of type
+    bot.callbackQuery(/select_.+/, async (ctx) => {
         if (!ctx.callbackQuery) return;
 
-        const data = ctx.callbackQuery.data;
-        if (typeof data !== 'string') return;
+        // Вся строка из callback_data
+        const data = ctx.callbackQuery.data; // например "select_teacher_123"
 
-        const regex = /^select_(group|teacher)_(.+)$/;
+        // Разделяем по "_"
+        const [, type, value] = data.split("_");
+        // type: "teacher"
+        // value: "123"
+
+        await ctx.answerCallbackQuery(); // убираем "часики"
+
+        // Дальше можно вызвать что-то в зависимости от type
+        if (type === "teacher") {
+            const list = await cacheService.getList(type) as { teacher: string; teacherId: string }[];
+            const teacherName = list.find(t => t.teacherId === value)?.teacher;
+            await ctx.reply(`Вы выбрали преподавателя ${teacherName}`);
+        } else {
+            await ctx.reply(`Вы выбрали группу ${value}`);
+        }
+    });
+
+
+    // Navigation list
+    bot.callbackQuery(/page_(group|teacher|audience|subject)_\d+/, async (ctx) => {
+        const data = ctx.callbackQuery.data;
+        const regex = /^page_(group|teacher)_(.+)$/;
         const match = data.match(regex);
         if (!match) return;
 
-        const type = match[1];
-        const value = match[2].trim();
+        const type = match[1] as ScheduleType;
+        const page = Number(match[2].trim());
 
-        switch (type) {
-            case 'group':
-                await userSelectionService.pickValue(ctx, type, value);
-                await ctx.answerCallbackQuery();
-                break;
-            case 'teacher':
-        }
-
-    }));
-
-
-    bot.callbackQuery(/page_\d+/, async (ctx) => {
-        const data = ctx.callbackQuery.data;
-        const page = Number(data.split('_')[1]);
-
-        await showGroupMenu(ctx, page);
+        await showListMenu(ctx, page, type, listMenuTexts[type]);
         await ctx.answerCallbackQuery();
 
     });

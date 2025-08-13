@@ -1,7 +1,10 @@
 import XLSX from 'xlsx';
 
 import type { Lesson, WeekLessons, CellInfo, TableData, MergeMap } from '@/src/types/schedule.ts';
-import { scheduleService } from '@/src/modules/schedule/schedule.service.ts';
+import { scheduleService } from '@/src/database/schedule/schedule.service.ts';
+import { normalizeTeacherName } from '@/src/utils/normalize.js';
+import { distance } from 'fastest-levenshtein';
+import { findClosest } from '@/src/utils/find-closest.js';
 
 const startPoints = {
     groups: 'F10',
@@ -19,7 +22,8 @@ const tableService = {
     groups: [] as CellInfo[],
     days: [] as CellInfo[],
     weekTitle: '',
-    groupsListCache: null as string[] | null,
+    teachers: [] as string[],
+    normalizedTeachers: [] as string[],
 
     load(filePath: string) {
         console.log('✅ Start loading table from', filePath);
@@ -127,7 +131,6 @@ const tableService = {
         const lessons: Lesson[] = [];
 
         // Проверка на полный день
-        // TODO: сейчас вычисление на полный день захардкодено, может сломаться если формат поменяется
         if (this.cellInfo(`${group.startCol}${day.startRow}`, 0, 0)?.startAddress === this.cellInfo(`${group.startCol}${day.startRow}`, 3, 7)?.startAddress) {
             const lesson: Lesson = {
                 number: 1,
@@ -156,8 +159,15 @@ const tableService = {
             currentRow++;
         }
 
+        const addTeacher = (teacher: string) => {
+            if (this.teachers.includes(teacher)) return;
+            this.teachers.push(teacher);
+        };
+
         lessonNumbersPoints.forEach(lessonNum => {
             const row = lessonNum.startRow;
+            let teacher;
+
             const lesson: Lesson = {
                 number: Number(lessonNum.value),
                 group: group.value,
@@ -175,17 +185,23 @@ const tableService = {
 
             if (subgroup1Lesson?.startAddress === subgroup2Lesson?.startAddress) {
                 // Одна подгруппа, один урок - пушим один объект
+                teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
+                addTeacher(teacher);
+
                 lesson.name = subgroup1Lesson?.value || '';
-                lesson.teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
+                lesson.teacher = teacher;
                 lesson.audience = this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '';
                 lessons.push(lesson);
             } else {
                 // Две подгруппы - создаём и пушим два отдельных урока
+                teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
+                addTeacher(teacher);
+
                 const lesson1: Lesson = {
                     number: lesson.number,
                     group: lesson.group,
                     name: subgroup1Lesson?.value || '',
-                    teacher: this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '',
+                    teacher: teacher,
                     audience: this.cellInfo(`${group.startCol}${row}`, 1, 0)?.value || '',
                     subgroup: 1,
                     day: lesson.day,
@@ -193,11 +209,14 @@ const tableService = {
                 };
                 lessons.push(lesson1);
 
+                teacher = this.cellInfo(`${group.startCol}${row}`, 2, 1)?.value || '';
+                addTeacher(teacher);
+
                 const lesson2: Lesson = {
                     number: lesson.number,
                     group: lesson.group,
                     name: subgroup2Lesson?.value || '',
-                    teacher: this.cellInfo(`${group.startCol}${row}`, 2, 1)?.value || '',
+                    teacher: teacher,
                     audience: this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '',
                     subgroup: 2,
                     day: lesson.day,
@@ -212,7 +231,6 @@ const tableService = {
     async fullParse() {
         this.findGroups();
         this.findDays();
-        this.resetGroupsCache();
 
         const weekLessons: WeekLessons = {
             lessons: [],
@@ -226,6 +244,51 @@ const tableService = {
             weekLessons.lessons.push(...this.parseDayLessonsFromGroup(day, group));
         }
 
+        const teacherMap: Record<string, { normalizedTeacher: string, teacherId: string }> = {};
+        this.teachers.forEach(teacher => {
+            teacherMap[teacher] = {
+                normalizedTeacher: normalizeTeacherName(teacher),
+                teacherId: '',
+            };
+        });
+
+        function aggregateTeachers(normalizedTeachers: string[], threshold = 0): string[] {
+            const aggregated: string[] = [];
+            for (const normalized of normalizedTeachers) {
+                const exists = aggregated.some(name => distance(name, normalized) <= threshold);
+                if (!exists) {
+                    aggregated.push(normalized);
+                }
+            }
+            return aggregated;
+        }
+
+        const uniqueNormalizedTeachers = aggregateTeachers(this.teachers.map(t => teacherMap[t].normalizedTeacher));
+        this.teachers.map(teacher => {
+            const teacherId = findClosest(uniqueNormalizedTeachers, teacherMap[teacher].normalizedTeacher, 2, 1);
+            teacherMap[teacher].teacherId = teacherId ? teacherId[0] : '';
+        });
+
+        console.log(teacherMap);
+
+        function formatName(str: string) {
+            return str
+                .trim()
+                .split(/\s+/) // разбиваем по пробелам
+                .map(word =>
+                    word
+                        .split('.') // если инициалы через точку
+                        .map(part => part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : '')
+                        .join('.'), // собираем обратно с точками
+                )
+                .join(' ');
+        }
+
+        weekLessons.lessons.forEach(lesson => {
+            lesson.teacherId = teacherMap[lesson.teacher].teacherId;
+            lesson.teacher = formatName(normalizeTeacherName(lesson.teacher, true));
+        });
+
         const result = await scheduleService.create(weekLessons);
         console.log(result);
 
@@ -233,23 +296,6 @@ const tableService = {
         // this.groups.forEach(group => {
         //     console.log(group.value);
         // })
-    },
-
-    async getGroupsList() {
-        if (this.groupsListCache) {
-            console.log('✅ restore groupsListCache');
-            return this.groupsListCache;
-        }
-        if (this.groups.length) {
-            this.groupsListCache = this.groups.map(group => group.value);
-        } else {
-            this.groupsListCache = await scheduleService.findAllGroups();
-        }
-        return this.groupsListCache;
-    },
-
-    resetGroupsCache() {
-        this.groupsListCache = null;
     },
 };
 

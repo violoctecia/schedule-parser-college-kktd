@@ -1,5 +1,3 @@
-import type { Range } from 'xlsx';
-
 export type TableData = Record<string, string>;
 export type MergeMap = Map<string, string>;
 export type CellInfo = {
@@ -13,6 +11,7 @@ export type CellInfo = {
 export type Lesson = {
     name: string;
     teacher: string;
+    teacherId?: string;
     audience: string;
     subgroup?: number;
     group: string;
@@ -26,4 +25,7 @@ export type WeekLessons = {
     lessons: Lesson[];
     weekTitle: string;
 }
+
+export type ScheduleType = 'group' | 'teacher' | 'name' | 'audience';
+
 

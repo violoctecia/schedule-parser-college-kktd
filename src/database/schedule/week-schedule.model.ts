@@ -8,6 +8,7 @@ interface IWeekLessons extends WeekLessons, Document {}
 const LessonSchema = new Schema<ILesson>({
     name: { type: String, default: '' },
     teacher: { type: String, default: '' },
+    teacherId: { type: String},
     audience: { type: String, default: '' },
     subgroup: { type: Number },
     group: { type: String, required: true },
