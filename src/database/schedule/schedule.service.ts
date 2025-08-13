@@ -14,8 +14,8 @@ export const scheduleService = {
         return `✅ Schedule for week ${data.weekTitle} created`;
     },
 
-    async searchBy(weekTitle: string, param: 'teacher' | 'group' | 'name' | 'audience', value: string, sortByDay?: boolean) {
-        const allowedParams = ['teacher', 'group', 'name', 'audience'];
+    async searchBy(weekTitle: string, param: 'teacherId' | 'group' | 'name' | 'audience', value: string, sortByDay?: boolean) {
+        const allowedParams = ['teacherId', 'group', 'name', 'audience'];
         if (!allowedParams.includes(param)) {
             return `❌ Invalid param ${param}`;
         }
@@ -50,7 +50,7 @@ export const scheduleService = {
         return [...new Set(weekSchedule.lessons.map(l => l[type]))]
     },
 
-    async findAllTeachers(): Promise<{ teacherId: string; teacher: string }[]> {
+    async findAllTeachers(): Promise<{ teacherId: string; teacherNormalized: string }[]> {
         const weekSchedule = await WeekScheduleModel
             .findOne()
             .sort({ _id: -1 }); // берём последний добавленный документ
@@ -60,18 +60,19 @@ export const scheduleService = {
             return [];
         }
 
-        const uniqueMap = new Map<string, { teacherId: string; teacher: string }>();
+        const uniqueMap = new Map<string, { teacherId: string; teacherNormalized: string }>();
 
         for (const lesson of weekSchedule.lessons) {
-            if (lesson.teacherId && lesson.teacher) {
+            if (lesson.teacherId && lesson.teacherNormalized) {
                 uniqueMap.set(lesson.teacherId, {
                     teacherId: lesson.teacherId,
-                    teacher: lesson.teacher
+                    teacherNormalized: lesson.teacherNormalized
                 });
             }
         }
 
-        return Array.from(uniqueMap.values());
+        return Array.from(uniqueMap.values())
+            .sort((a, b) => a.teacherNormalized.localeCompare(b.teacherNormalized));
     }
 
 

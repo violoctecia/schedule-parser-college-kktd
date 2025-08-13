@@ -1,10 +1,7 @@
 import XLSX from 'xlsx';
-
-import type { Lesson, WeekLessons, CellInfo, TableData, MergeMap } from '@/src/types/schedule.ts';
+import type { CellInfo, Lesson, MergeMap, TableData, WeekLessons } from '@/src/types/schedule.ts';
 import { scheduleService } from '@/src/database/schedule/schedule.service.ts';
-import { normalizeTeacherName } from '@/src/utils/normalize.js';
-import { distance } from 'fastest-levenshtein';
-import { findClosest } from '@/src/utils/find-closest.js';
+import { findClosest } from '@/src/utils/find-closest.ts';
 
 const startPoints = {
     groups: 'F10',
@@ -18,16 +15,14 @@ const tableService = {
     table: {} as TableData,
     mergedMap: new Map() as MergeMap,
     merges: [] as XLSX.Range[],
-    filePath: null as string | null,
+
     groups: [] as CellInfo[],
     days: [] as CellInfo[],
     weekTitle: '',
-    teachers: [] as string[],
-    normalizedTeachers: [] as string[],
+    teachersMap: {} as Record<string, string>,
 
     load(filePath: string) {
         console.log('✅ Start loading table from', filePath);
-        this.filePath = filePath;
 
         const workbook = XLSX.readFile(filePath);
         const sheetName = workbook.SheetNames[0];
@@ -127,16 +122,63 @@ const tableService = {
         }
     },
 
+    normalizeTeacher(originalTeacherName: string, withSpaces = false): string {
+        if (!originalTeacherName) return '';
+
+        let name = originalTeacherName.toLowerCase().trim();
+
+        // шаблон: фамилия + 1–2 буквы (с точками или без) + любые пробелы между ними
+        // [\p{L}]+ — фамилия
+        // (?:\s?[\p{L}]\.?\s?){1,2} — 1 или 2 инициала, с точками или без
+        const initialsPattern = /^([\p{L}]+(?:\s?[\p{L}]\.?\s?){1,2})/u;
+
+        const match = name.match(initialsPattern);
+        if (match) {
+            name = match[1];
+        }
+
+        if (withSpaces) {
+            function formatName(str: string) {
+                return str
+                    .trim()
+                    .split(/\s+/)
+                    .map(word =>
+                        word
+                            .split('.')
+                            .map(part => part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : '')
+                            .join('.'),
+                    )
+                    .join(' ');
+            }
+
+            return formatName(name);
+        }
+
+        return name.replace(/[\s.]/g, '');
+    },
+
+    setIdsToTeachers(lessons: Lesson[]) {
+        const normalizedTeacherList: string[] = Object.keys(this.teachersMap).map(teacher => this.normalizeTeacher(teacher));
+
+        return lessons.map(lesson => {
+            const teacherId = findClosest(normalizedTeacherList, this.normalizeTeacher(lesson.teacherNormalized), 2, 1);
+            lesson.teacherId = teacherId ? teacherId[0] : '';
+            return lesson;
+        });
+    },
+
     parseDayLessonsFromGroup(day: CellInfo, group: CellInfo) {
         const lessons: Lesson[] = [];
 
-        // Проверка на полный день
-        if (this.cellInfo(`${group.startCol}${day.startRow}`, 0, 0)?.startAddress === this.cellInfo(`${group.startCol}${day.startRow}`, 3, 7)?.startAddress) {
+        // Проверка на полный день для группы, если день полный - учителя нет (ГОСУДАРСТВЕННАЯ ИТОГОВАЯ АТТЕСТАЦИЯ, и т.д.)
+        if (this.cellInfo(`${group.startCol}${day.startRow}`, 0, 0)?.startAddress === this.cellInfo(`${group.startCol}${day.startRow}`, 2, 10)?.startAddress) {
             const lesson: Lesson = {
                 number: 1,
                 group: group.value,
                 name: this.cellInfo(`${group.startCol}${day.startRow}`, 0, 0)?.value || '',
                 teacher: '',
+                teacherNormalized: '',
+                teacherId: '',
                 audience: '',
                 day: day.value,
                 weekTitle: this.weekTitle,
@@ -159,20 +201,22 @@ const tableService = {
             currentRow++;
         }
 
-        const addTeacher = (teacher: string) => {
-            if (this.teachers.includes(teacher)) return;
-            this.teachers.push(teacher);
+        const addNormalizedTeacherToMap = (teacher: string) => {
+            this.teachersMap[teacher] = '';
         };
 
         lessonNumbersPoints.forEach(lessonNum => {
             const row = lessonNum.startRow;
             let teacher;
+            let normalizedTeacher;
 
             const lesson: Lesson = {
                 number: Number(lessonNum.value),
                 group: group.value,
                 name: '',
                 teacher: '',
+                teacherNormalized: '',
+                teacherId: '',
                 audience: '',
                 day: day.value,
                 weekTitle: this.weekTitle,
@@ -183,25 +227,33 @@ const tableService = {
 
             if (!subgroup1Lesson?.value && !subgroup2Lesson?.value) return;
 
+            // Одна подгруппа, один урок - пушим один объект
             if (subgroup1Lesson?.startAddress === subgroup2Lesson?.startAddress) {
-                // Одна подгруппа, один урок - пушим один объект
+
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
-                addTeacher(teacher);
+                normalizedTeacher = this.normalizeTeacher(teacher, true);
+                addNormalizedTeacherToMap(normalizedTeacher);
+
+                lesson.teacher = teacher;
+                lesson.teacherNormalized = normalizedTeacher;
 
                 lesson.name = subgroup1Lesson?.value || '';
-                lesson.teacher = teacher;
                 lesson.audience = this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '';
                 lessons.push(lesson);
-            } else {
+
                 // Две подгруппы - создаём и пушим два отдельных урока
+            } else {
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
-                addTeacher(teacher);
+                normalizedTeacher = this.normalizeTeacher(teacher, true);
+                addNormalizedTeacherToMap(normalizedTeacher);
 
                 const lesson1: Lesson = {
                     number: lesson.number,
                     group: lesson.group,
                     name: subgroup1Lesson?.value || '',
                     teacher: teacher,
+                    teacherNormalized: normalizedTeacher,
+                    teacherId: '',
                     audience: this.cellInfo(`${group.startCol}${row}`, 1, 0)?.value || '',
                     subgroup: 1,
                     day: lesson.day,
@@ -210,13 +262,16 @@ const tableService = {
                 lessons.push(lesson1);
 
                 teacher = this.cellInfo(`${group.startCol}${row}`, 2, 1)?.value || '';
-                addTeacher(teacher);
+                normalizedTeacher = this.normalizeTeacher(teacher, true);
+                addNormalizedTeacherToMap(normalizedTeacher);
 
                 const lesson2: Lesson = {
                     number: lesson.number,
                     group: lesson.group,
                     name: subgroup2Lesson?.value || '',
                     teacher: teacher,
+                    teacherNormalized: normalizedTeacher,
+                    teacherId: '',
                     audience: this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '',
                     subgroup: 2,
                     day: lesson.day,
@@ -244,50 +299,14 @@ const tableService = {
             weekLessons.lessons.push(...this.parseDayLessonsFromGroup(day, group));
         }
 
-        const teacherMap: Record<string, { normalizedTeacher: string, teacherId: string }> = {};
-        this.teachers.forEach(teacher => {
-            teacherMap[teacher] = {
-                normalizedTeacher: normalizeTeacherName(teacher),
-                teacherId: '',
-            };
-        });
+        // Добавляем id учителей
+        weekLessons.lessons = this.setIdsToTeachers(weekLessons.lessons);
 
-        function aggregateTeachers(normalizedTeachers: string[], threshold = 0): string[] {
-            const aggregated: string[] = [];
-            for (const normalized of normalizedTeachers) {
-                const exists = aggregated.some(name => distance(name, normalized) <= threshold);
-                if (!exists) {
-                    aggregated.push(normalized);
-                }
-            }
-            return aggregated;
-        }
-
-        const uniqueNormalizedTeachers = aggregateTeachers(this.teachers.map(t => teacherMap[t].normalizedTeacher));
-        this.teachers.map(teacher => {
-            const teacherId = findClosest(uniqueNormalizedTeachers, teacherMap[teacher].normalizedTeacher, 2, 1);
-            teacherMap[teacher].teacherId = teacherId ? teacherId[0] : '';
-        });
-
-        console.log(teacherMap);
-
-        function formatName(str: string) {
-            return str
-                .trim()
-                .split(/\s+/) // разбиваем по пробелам
-                .map(word =>
-                    word
-                        .split('.') // если инициалы через точку
-                        .map(part => part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : '')
-                        .join('.'), // собираем обратно с точками
-                )
-                .join(' ');
-        }
 
         weekLessons.lessons.forEach(lesson => {
-            lesson.teacherId = teacherMap[lesson.teacher].teacherId;
-            lesson.teacher = formatName(normalizeTeacherName(lesson.teacher, true));
+            console.log(lesson.teacher, '-', lesson.teacherNormalized, '-', lesson.teacherId);
         });
+
 
         const result = await scheduleService.create(weekLessons);
         console.log(result);

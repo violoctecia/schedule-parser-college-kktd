@@ -16,10 +16,10 @@ export async function showListMenu(
         type === 'teacher'
             ? getPaginatedKeyboard(
                 type,
-                list as { teacher: string; teacherId: string }[],
+                list as { teacherNormalized: string; teacherId: string }[],
                 page,
                 6,
-                item => item.teacher,
+                item => item.teacherNormalized,
                 item => item.teacherId
             )
             : getPaginatedKeyboard(

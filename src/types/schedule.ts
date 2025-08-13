@@ -10,12 +10,16 @@ export type CellInfo = {
 
 export type Lesson = {
     name: string;
+
     teacher: string;
-    teacherId?: string;
+    teacherNormalized: string;
+    teacherId: string;
+
     audience: string;
     subgroup?: number;
     group: string;
     number: number;
+
     day: string;
     weekTitle: string;
     isFullDay?: boolean;

@@ -2,10 +2,11 @@ import { InlineKeyboard, Bot } from 'grammy';
 import { showListMenu } from '@/src/bot/menus/list.menu.ts';
 import { ScheduleType } from '@/src/types/schedule.ts';
 import { cacheService } from '@/src/services/cache.service.js';
+import { scheduleService } from '@/src/database/schedule/schedule.service.js';
 
 const listMenuTexts = {
-    group: '👥 Выберите группу из предложенных вариантов',
-    teacher: '👨‍🏫 Выберите преподавателя:',
+    group: '👥 <b>Выберите группу</b> из предложенных вариантов:',
+    teacher: '👨‍🏫 <b>Выберите преподавателя</b> из предложенных вариантов:\n\nСписок для удобства отсортирован по алфавиту',
     audience: 'Выберите аудиторию:',
     name: 'Выберите предмет:',
 };
@@ -16,58 +17,46 @@ export function registerCallbacks(bot: Bot) {
     bot.callbackQuery('select_flow_type', async (ctx) => {
         await ctx.editMessageText('Выберите тип расписания для поиска:', {
             reply_markup: new InlineKeyboard()
-                .text('👥 Поиск по группе', 'show_groups')
+                .text('👥 Поиск по группе', 'list_group')
                 .row()
-                .text('👨‍🏫 Поиск по преподователю', 'show_teachers')
+                .text('👨‍🏫 Поиск по преподователю', 'list_teacher')
                 .row()
-                .text('🏫 Поиск по аудитории', 'show_audiences')
+                .text('🏫 Поиск по аудитории', 'list_audience')
                 .row()
-                .text('📚 Поиск по предмету', 'show_subjects'),
+                .text('📚 Поиск по предмету', 'list_subject'),
         });
         await ctx.answerCallbackQuery();
     });
 
     // Show list
-    bot.callbackQuery(/show_.+/, async (ctx) => {
-        if (!ctx.callbackQuery) return;
-        const type = ctx.callbackQuery.data;
+    bot.callbackQuery(/list.+/, async (ctx) => {
+        const data = ctx.callbackQuery.data;
+        const [, type] = data.split("_");
 
-        switch (type) {
-            case 'show_groups':
-                await showListMenu(ctx, 0, 'group', listMenuTexts.group);
-                await ctx.answerCallbackQuery();
-                break
-            case 'show_teachers':
-                await showListMenu(ctx, 0, 'teacher', listMenuTexts.teacher);
-                await ctx.answerCallbackQuery();
-                break
-            case 'show_audiences':
-            case 'show_subjects':
-        }
+        await showListMenu(ctx, 0, type as ScheduleType, listMenuTexts[type as ScheduleType]);
+        await ctx.answerCallbackQuery();
     });
 
     // Pick value of type
     bot.callbackQuery(/select_.+/, async (ctx) => {
-        if (!ctx.callbackQuery) return;
-
-        // Вся строка из callback_data
-        const data = ctx.callbackQuery.data; // например "select_teacher_123"
-
-        // Разделяем по "_"
+        const data = ctx.callbackQuery.data;
         const [, type, value] = data.split("_");
-        // type: "teacher"
-        // value: "123"
-
-        await ctx.answerCallbackQuery(); // убираем "часики"
 
         // Дальше можно вызвать что-то в зависимости от type
         if (type === "teacher") {
-            const list = await cacheService.getList(type) as { teacher: string; teacherId: string }[];
-            const teacherName = list.find(t => t.teacherId === value)?.teacher;
-            await ctx.reply(`Вы выбрали преподавателя ${teacherName}`);
+            const list = await cacheService.getList(type) as { teacherNormalized: string; teacherId: string }[];
+            const teacherName = list.find(t => t.teacherId === value)?.teacherNormalized;
+
+            const schedule = await scheduleService.searchBy('с 23.01.2025 г. по 30.06.2025 г.', 'teacherId', value, true)
+            console.log(schedule);
+            await ctx.reply(`Вы выбрали преподавателя ${teacherName}\n\n${schedule}`);
         } else {
-            await ctx.reply(`Вы выбрали группу ${value}`);
+            const schedule = await scheduleService.searchBy('с 23.01.2025 г. по 30.06.2025 г.', 'group', value, true)
+            console.log(schedule);
+            await ctx.reply(`Вы выбрали группу ${value}\n\n${schedule}`);
         }
+
+        await ctx.answerCallbackQuery();
     });
 
 
@@ -83,6 +72,5 @@ export function registerCallbacks(bot: Bot) {
 
         await showListMenu(ctx, page, type, listMenuTexts[type]);
         await ctx.answerCallbackQuery();
-
     });
 }

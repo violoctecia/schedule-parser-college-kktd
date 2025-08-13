@@ -1,7 +1,7 @@
 import { scheduleService } from '@/src/database/schedule/schedule.service.ts';
 import { ScheduleType } from '@/src/types/schedule.ts';
 
-type List = string[] | {teacher: string, teacherId: string}[];
+type List = string[] | {teacherNormalized: string, teacherId: string}[];
 
 class CacheService {
     private cache = new Map<ScheduleType, List>();
