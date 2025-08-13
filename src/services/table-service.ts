@@ -2,6 +2,7 @@ import XLSX from 'xlsx';
 import type { CellInfo, Lesson, MergeMap, TableData, WeekLessons } from '@/src/types/schedule.ts';
 import { scheduleService } from '@/src/database/schedule/schedule.service.ts';
 import { findClosest } from '@/src/utils/find-closest.ts';
+import { formatText } from '@/src/utils/format-text.ts';
 
 const startPoints = {
     groups: 'F10',
@@ -138,20 +139,7 @@ const tableService = {
         }
 
         if (withSpaces) {
-            function formatName(str: string) {
-                return str
-                    .trim()
-                    .split(/\s+/)
-                    .map(word =>
-                        word
-                            .split('.')
-                            .map(part => part ? part[0].toUpperCase() + part.slice(1).toLowerCase() : '')
-                            .join('.'),
-                    )
-                    .join(' ');
-            }
-
-            return formatName(name);
+            return formatText(name);
         }
 
         return name.replace(/[\s.]/g, '');

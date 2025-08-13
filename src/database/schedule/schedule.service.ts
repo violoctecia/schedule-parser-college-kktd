@@ -14,7 +14,7 @@ export const scheduleService = {
         return `✅ Schedule for week ${data.weekTitle} created`;
     },
 
-    async searchBy(weekTitle: string, param: 'teacherId' | 'group' | 'name' | 'audience', value: string, sortByDay?: boolean) {
+    async searchBy(weekTitle: string, param: 'teacherId' | 'group' | 'name' | 'audience', value: string) {
         const allowedParams = ['teacherId', 'group', 'name', 'audience'];
         if (!allowedParams.includes(param)) {
             return `❌ Invalid param ${param}`;
@@ -24,19 +24,17 @@ export const scheduleService = {
             return `❌ Week ${weekTitle} not found`;
         }
         const result = weekSchedule.lessons.filter(lesson => lesson[param] === value);
-        if (sortByDay) {
-            const newObj: Record<string, Lesson[]> = {};
 
-            result.forEach(lesson => {
-                if (!newObj[lesson.day]) {
-                    newObj[lesson.day] = [];
-                }
-                newObj[lesson.day].push(lesson);
-            });
+        const newObj: Record<string, Lesson[]> = {};
 
-            return newObj;
-        }
-        return result;
+        result.forEach(lesson => {
+            if (!newObj[lesson.day]) {
+                newObj[lesson.day] = [];
+            }
+            newObj[lesson.day].push(lesson);
+        });
+
+        return newObj;
     },
 
     async findAllByType(type: ScheduleType): Promise<string[]> {

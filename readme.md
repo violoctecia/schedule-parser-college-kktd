@@ -1,3 +1,3 @@
-### Configure parser
-1. cd src/parser/table-service.ts
-2. startPoints contains the addresses of the starting points in the table. Can be changed if the table format changes.
+### Parser
+1. cd src/services/table-service.ts
+2. startPoints contains the addresses of the starting points in the xlsx table. Can be changed if the table format changes.
