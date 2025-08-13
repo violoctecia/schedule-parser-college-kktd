@@ -1,8 +1,18 @@
-import { Bot, InlineKeyboard } from 'grammy';
-import { cfg } from '@/src/config.ts';
+import { cfg } from '@/src/config.js';
 import { registerCallbacks } from '@/src/bot/callbacks.js';
+import { Bot, InlineKeyboard, session } from 'grammy';
+import { MyContext, SessionData } from '@/src/types/bot.js';
+import { showSelectTypeMenu } from '@/src/bot/menus/select-type.menu.js';
+import { ScheduleType } from '@/src/types/schedule.js';
+import { handleManualInput } from '@/src/bot/utils/manual-input.js';
 
-export const bot = new Bot(cfg.botToken);
+export const bot = new Bot<MyContext>(cfg.botToken);
+
+function initial(): SessionData {
+    return {  };
+}
+
+bot.use(session({ initial }));
 
 bot.api.config.use((prev, method, payload) =>
     prev(method, {
@@ -14,11 +24,41 @@ bot.api.config.use((prev, method, payload) =>
 
 bot.command('start', async (ctx) => {
     await ctx.reply(
-        '👋👋 Привет! \n\nБот обновлен и работает в штатном режиме. Всего 2 шага до вашего расписания 👇',
-        {
+        '👋👋 Привет! \n\nБот обновлен и работает в штатном режиме. Всего 2 шага до вашего расписания 👇', {
             reply_markup: new InlineKeyboard().text('Продолжить ▶️', 'select_flow_type'),
         },
     );
+});
+
+bot.command('menu', async (ctx) => {
+    await showSelectTypeMenu(ctx);
+});
+
+bot.on('message:text', async (ctx) => {
+    const replyTo = ctx.message.reply_to_message;
+    if (!replyTo) return;
+
+    const match = replyTo.text?.startsWith('В ответе на это сообщение');
+    if (!match) return;
+
+    const userValue = ctx.message.text.trim();
+    let type: ScheduleType | null = null;
+
+    if (replyTo.text?.includes('группу')) {
+        type = 'group';
+    } else if (replyTo.text?.includes('преподавателя')) {
+        type = 'teacher';
+    } else if (replyTo.text?.includes('аудиторию')) {
+        type = 'audience';
+    } else if (replyTo.text?.includes('предмет')) {
+        type = 'name';
+    }
+
+    await handleManualInput(ctx, type as ScheduleType, userValue);
+});
+
+bot.catch((err) => {
+    console.error('‼️ Прилетела ошибка:', err);
 });
 
 registerCallbacks(bot);

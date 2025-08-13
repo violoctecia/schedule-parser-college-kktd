@@ -1,8 +1,8 @@
 import XLSX from 'xlsx';
-import type { CellInfo, Lesson, MergeMap, TableData, WeekLessons } from '@/src/types/schedule.ts';
-import { scheduleService } from '@/src/database/schedule/schedule.service.ts';
-import { findClosest } from '@/src/utils/find-closest.ts';
-import { formatText } from '@/src/utils/format-text.ts';
+import type { CellInfo, Lesson, MergeMap, TableData, WeekLessons } from '@/src/types/schedule.js';
+import { scheduleService } from '@/src/database/schedule/schedule.service.js';
+import { findClosest } from '@/src/utils/find-closest.js';
+import { normalizeTeacher } from '@/src/utils/normalize-teacher.js';
 
 const startPoints = {
     groups: 'F10',
@@ -123,33 +123,11 @@ const tableService = {
         }
     },
 
-    normalizeTeacher(originalTeacherName: string, withSpaces = false): string {
-        if (!originalTeacherName) return '';
-
-        let name = originalTeacherName.toLowerCase().trim();
-
-        // шаблон: фамилия + 1–2 буквы (с точками или без) + любые пробелы между ними
-        // [\p{L}]+ — фамилия
-        // (?:\s?[\p{L}]\.?\s?){1,2} — 1 или 2 инициала, с точками или без
-        const initialsPattern = /^([\p{L}]+(?:\s?[\p{L}]\.?\s?){1,2})/u;
-
-        const match = name.match(initialsPattern);
-        if (match) {
-            name = match[1];
-        }
-
-        if (withSpaces) {
-            return formatText(name);
-        }
-
-        return name.replace(/[\s.]/g, '');
-    },
-
     setIdsToTeachers(lessons: Lesson[]) {
-        const normalizedTeacherList: string[] = Object.keys(this.teachersMap).map(teacher => this.normalizeTeacher(teacher));
+        const normalizedTeacherList: string[] = Object.keys(this.teachersMap).map(teacher => normalizeTeacher(teacher));
 
         return lessons.map(lesson => {
-            const teacherId = findClosest(normalizedTeacherList, this.normalizeTeacher(lesson.teacherNormalized), 2, 1);
+            const teacherId = findClosest(normalizedTeacherList, normalizeTeacher(lesson.teacherNormalized), 2, 1);
             lesson.teacherId = teacherId ? teacherId[0] : '';
             return lesson;
         });
@@ -219,7 +197,7 @@ const tableService = {
             if (subgroup1Lesson?.startAddress === subgroup2Lesson?.startAddress) {
 
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
-                normalizedTeacher = this.normalizeTeacher(teacher, true);
+                normalizedTeacher = normalizeTeacher(teacher, true);
                 addNormalizedTeacherToMap(normalizedTeacher);
 
                 lesson.teacher = teacher;
@@ -232,7 +210,7 @@ const tableService = {
                 // Две подгруппы - создаём и пушим два отдельных урока
             } else {
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
-                normalizedTeacher = this.normalizeTeacher(teacher, true);
+                normalizedTeacher = normalizeTeacher(teacher, true);
                 addNormalizedTeacherToMap(normalizedTeacher);
 
                 const lesson1: Lesson = {
@@ -250,7 +228,7 @@ const tableService = {
                 lessons.push(lesson1);
 
                 teacher = this.cellInfo(`${group.startCol}${row}`, 2, 1)?.value || '';
-                normalizedTeacher = this.normalizeTeacher(teacher, true);
+                normalizedTeacher = normalizeTeacher(teacher, true);
                 addNormalizedTeacherToMap(normalizedTeacher);
 
                 const lesson2: Lesson = {

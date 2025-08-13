@@ -1,6 +1,7 @@
-import { Context, InlineKeyboard } from 'grammy';
+import { InlineKeyboard } from 'grammy';
+import { MyContext } from '@/src/types/bot.js';
 
-export async function showSelectTypeMenu(ctx: Context, isEdit: boolean = false) {
+export async function showSelectTypeMenu(ctx: MyContext, isEdit: boolean = false) {
     const kb = {
         reply_markup: new InlineKeyboard()
             .text('👥 Поиск по группе', 'list_group')
@@ -13,8 +14,8 @@ export async function showSelectTypeMenu(ctx: Context, isEdit: boolean = false) 
     };
 
     if (isEdit) {
-        await ctx.editMessageText('Выберите тип расписания для поиска:', kb);
+        await ctx.editMessageText('🏠 Выберите тип расписания для поиска:', kb);
     } else {
-        await ctx.reply('Выберите тип расписания для поиска:', kb);
+        await ctx.reply('🏠 Выберите тип расписания для поиска:', kb);
     }
 }

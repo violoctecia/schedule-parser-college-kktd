@@ -1,5 +1,5 @@
-import { scheduleService } from '@/src/database/schedule/schedule.service.ts';
-import { ScheduleType } from '@/src/types/schedule.ts';
+import { scheduleService } from '@/src/database/schedule/schedule.service.js';
+import { ScheduleType } from '@/src/types/schedule.js';
 
 type List = string[] | {teacherNormalized: string, teacherId: string}[];
 
@@ -21,7 +21,7 @@ class CacheService {
             data = await scheduleService.findAllByType(type);
         }
 
-
+        console.log('new cache:', data);
         this.cache.set(type, data);
         return data;
     }

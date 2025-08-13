@@ -1,11 +1,10 @@
-import { Context } from 'grammy';
-import { getPaginatedKeyboard } from '@/src/bot/utils/keyboards.ts';
+import { MyContext } from '@/src/types/bot.js';
+import { getPaginatedKeyboard } from '@/src/bot/utils/keyboards.js';
 import { cacheService } from '@/src/services/cache.service.js';
-import { ScheduleType } from '@/src/types/schedule.ts';
-
+import { ScheduleType } from '@/src/types/schedule.js';
 
 export async function showListMenu(
-    ctx: Context,
+    ctx: MyContext,
     page = 0,
     type: ScheduleType,
     text: string

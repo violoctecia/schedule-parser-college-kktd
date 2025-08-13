@@ -1,6 +1,6 @@
-import tableService from '@/src/services/table-service.ts';
-import { initDatabase } from '@/src/database/index.ts';
-import { startBot } from '@/src/bot/index.ts';
+import tableService from '@/src/services/table-service.js';
+import { initDatabase } from '@/src/database/index.js';
+import { startBot } from '@/src/bot/index.js';
 
 initDatabase();
 startBot();

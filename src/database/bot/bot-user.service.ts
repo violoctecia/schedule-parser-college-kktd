@@ -1,4 +1,4 @@
-import { BotUserModel, BotUser } from '@/src/database/bot/bot-user.model.ts';
+import { BotUserModel, BotUser } from '@/src/database/bot/bot-user.model.js';
 import { Context } from 'grammy';
 
 export const botUserService = {

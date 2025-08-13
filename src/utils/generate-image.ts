@@ -1,6 +1,6 @@
 import { createCanvas } from 'canvas';
-import { Lesson } from '@/src/types/schedule.ts';
-import { formatText } from '@/src/utils/format-text.ts';
+import { Lesson } from '@/src/types/schedule.js';
+import { formatText } from '@/src/utils/format-text.js';
 
 export async function generateImage(data: Record<string, Lesson[]>): Promise<Buffer> {
     const scale = 3; // увеличиваем для Retina

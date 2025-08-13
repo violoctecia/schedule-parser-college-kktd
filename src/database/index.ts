@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { cfg } from '@/src/config.ts';
+import { cfg } from '@/src/config.js';
 
 export const initDatabase = () => {
     mongoose

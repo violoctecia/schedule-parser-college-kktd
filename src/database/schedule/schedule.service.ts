@@ -1,5 +1,5 @@
-import { WeekScheduleModel } from '@/src/database/schedule/week-schedule.model.ts';
-import type { Lesson, ScheduleType, WeekLessons } from '@/src/types/schedule.ts';
+import { WeekScheduleModel } from '@/src/database/schedule/week-schedule.model.js';
+import type { Lesson, ScheduleType, WeekLessons } from '@/src/types/schedule.js';
 
 export const scheduleService = {
 
@@ -17,11 +17,11 @@ export const scheduleService = {
     async searchBy(weekTitle: string, param: 'teacherId' | 'group' | 'name' | 'audience', value: string) {
         const allowedParams = ['teacherId', 'group', 'name', 'audience'];
         if (!allowedParams.includes(param)) {
-            return `❌ Invalid param ${param}`;
+            return {err: `❌ Invalid param ${param}`};
         }
         const weekSchedule = await WeekScheduleModel.findOne({ weekTitle });
         if (!weekSchedule) {
-            return `❌ Week ${weekTitle} not found`;
+            return {err: `❌ Week ${weekTitle} not found`};
         }
         const result = weekSchedule.lessons.filter(lesson => lesson[param] === value);
 
@@ -45,7 +45,13 @@ export const scheduleService = {
             console.log(`❌ No one week not found`);
             return [] as string[];
         }
-        return [...new Set(weekSchedule.lessons.map(l => l[type]))]
+        return [
+            ...new Set(
+                weekSchedule.lessons
+                    .map(l => l[type])
+                    .filter(v => v && String(v).trim() !== '')
+            )
+        ];
     },
 
     async findAllTeachers(): Promise<{ teacherId: string; teacherNormalized: string }[]> {

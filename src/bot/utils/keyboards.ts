@@ -30,9 +30,14 @@ export function getPaginatedKeyboard<T>(
         }
     }
 
+
     const navKeyboard = new InlineKeyboard();
+
     if (page > 0) navKeyboard.text('⬅️ Назад', `page_${type}_${page - 1}`);
     if (end < items.length) navKeyboard.text('Вперед ➡️', `page_${type}_${page + 1}`);
+    navKeyboard.row().text('✏️ Ввести врчную', `manual_${type}`).row();
+    navKeyboard.text('🏠 Поменять поиск', `select_flow_type`);
+
 
     kb.append(navKeyboard);
 

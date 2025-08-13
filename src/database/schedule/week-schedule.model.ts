@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import type { Lesson, WeekLessons } from '@/src/types/schedule.ts';
+import type { Lesson, WeekLessons } from '@/src/types/schedule.js';
 
 interface ILesson extends Lesson, Document {}
 
