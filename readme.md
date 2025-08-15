@@ -3,7 +3,7 @@
 This project parses college schedules and makes them easily accessible for students, teachers, and parents.
 
 ### Problem
-Every week, students and teachers receive a large XLSX file with the schedule for the current week. Viewing it on mobile devices is inconvenient.
+Every week, students and teachers receive a large XLSX file with the schedule for the current week. Viewing it on mobile devices is inconvenient. You can see example `uploads/example.xlsx`.
 
 ### Solution
 The project automatically:
