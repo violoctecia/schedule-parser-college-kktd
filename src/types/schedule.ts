@@ -32,4 +32,6 @@ export type WeekLessons = {
 
 export type ScheduleType = 'group' | 'teacher' | 'name' | 'audience';
 
+export type DayLessons = Record<number, Lesson[]>
+export type Schedule = Record<string, DayLessons>
 

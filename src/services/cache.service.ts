@@ -26,12 +26,8 @@ class CacheService {
         return data;
     }
 
-    clear(type?: ScheduleType) {
-        if (type) {
-            this.cache.delete(type);
-        } else {
-            this.cache.clear();
-        }
+    clear() {
+        this.cache.clear();
     }
 }
 

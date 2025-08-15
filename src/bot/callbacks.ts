@@ -46,8 +46,6 @@ export function registerCallbacks(bot: Bot<MyContext>) {
         const data = ctx.callbackQuery.data;
         const [, type, value] = data.split('_');
 
-        await ctx.editMessageText('Пару секунд, готовим расписание..');
-
         await sendSchedule(ctx, type as ScheduleType, value);
         await ctx.answerCallbackQuery();
     });

@@ -136,12 +136,15 @@ const tableService = {
     parseDayLessonsFromGroup(day: CellInfo, group: CellInfo) {
         const lessons: Lesson[] = [];
 
+        const firstValue = this.cellInfo(`${group.startCol}${day.startRow}`, 0, 0);
+        const secondValue = this.cellInfo(`${group.startCol}${day.startRow}`, 3, 1);
         // Проверка на полный день для группы, если день полный - учителя нет (ГОСУДАРСТВЕННАЯ ИТОГОВАЯ АТТЕСТАЦИЯ, и т.д.)
-        if (this.cellInfo(`${group.startCol}${day.startRow}`, 0, 0)?.startAddress === this.cellInfo(`${group.startCol}${day.startRow}`, 2, 10)?.startAddress) {
+
+        if (firstValue?.startAddress === secondValue?.startAddress) {
             const lesson: Lesson = {
                 number: 1,
                 group: group.value,
-                name: this.cellInfo(`${group.startCol}${day.startRow}`, 0, 0)?.value || '',
+                name: firstValue?.value || '',
                 teacher: '',
                 teacherNormalized: '',
                 teacherId: '',
@@ -152,6 +155,7 @@ const tableService = {
             };
             return [lesson];
         }
+
 
         // Если не полный день, проходимя по всем занятим в дне
         const dayEndRow = parseInt(day.endAddress.slice(1));
@@ -225,7 +229,8 @@ const tableService = {
                     day: lesson.day,
                     weekTitle: lesson.weekTitle,
                 };
-                lessons.push(lesson1);
+                if (subgroup1Lesson?.value) lessons.push(lesson1);
+
 
                 teacher = this.cellInfo(`${group.startCol}${row}`, 2, 1)?.value || '';
                 normalizedTeacher = normalizeTeacher(teacher, true);
@@ -243,7 +248,7 @@ const tableService = {
                     day: lesson.day,
                     weekTitle: lesson.weekTitle,
                 };
-                lessons.push(lesson2);
+                if (subgroup2Lesson?.value) lessons.push(lesson2);
             }
         });
         return lessons;
@@ -268,19 +273,8 @@ const tableService = {
         // Добавляем id учителей
         weekLessons.lessons = this.setIdsToTeachers(weekLessons.lessons);
 
-
-        weekLessons.lessons.forEach(lesson => {
-            console.log(lesson.teacher, '-', lesson.teacherNormalized, '-', lesson.teacherId);
-        });
-
-
         const result = await scheduleService.create(weekLessons);
         console.log(result);
-
-        // console.log(await scheduleService.searchBy(this.weekTitle, 'group', '09.02.07-1', true));
-        // this.groups.forEach(group => {
-        //     console.log(group.value);
-        // })
     },
 };
 

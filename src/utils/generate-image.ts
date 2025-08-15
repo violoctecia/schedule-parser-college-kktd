@@ -1,72 +1,211 @@
-import { createCanvas } from 'canvas';
-import { Lesson } from '@/src/types/schedule.js';
+import { createCanvas, CanvasRenderingContext2D } from 'canvas';
+
+import { Lesson, Schedule, ScheduleType, DayLessons } from '@/src/types/schedule.js';
 import { formatText } from '@/src/utils/format-text.js';
 
-export async function generateImage(data: Record<string, Lesson[]>): Promise<Buffer> {
-    const scale = 3; // увеличиваем для Retina
-    const width = 800 * scale;
-    const height = 600 * scale;
+const cfg = {
+    backgroundColor: '#e6e6e6',
+    dayBackgroundColor: '#fff',
+    textColor: '#050505',
+    secondTextColor: 'rgba(5, 5, 5, 0.6)',
+    lineColor: 'rgba(5, 5, 5, 0.1)',
+    borderRadius: 20,
+    scale: 3, // for Retina
+};
 
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext('2d');
+function calcDayHeight(day: DayLessons) {
+    let height = 0;
 
-    // Масштабируем координаты
-    ctx.scale(scale, scale);
+    const numbersOfLessons = Object.keys(day).map(Number);
+    numbersOfLessons.forEach((key) => {
+        height += 12; // время
 
-    const baseWidth = width / scale;
-    const baseHeight = height / scale;
+        const lessons = day[key];
+        lessons.forEach((lesson) => {
+            height += 16; // предмет + подгруппа
+            height += 2;
+            height += 16; // преподаватель / группа
+        });
 
-    // Фон
-    ctx.fillStyle = "#F2F1ED";
-    ctx.fillRect(0, 0, baseWidth, baseHeight);
+        if (lessons.length > 1) {
+            height += (lessons.length - 1) * 2;
+        }
+    });
 
-    // Настройки текста
-    ctx.fillStyle = '#161616';
-    ctx.font = '16px Roboto';
+    if (numbersOfLessons.length > 1) {
+        height += (numbersOfLessons.length - 1) * 16;
+    }
 
+    height += 16; // паддинги у дня
+    return height;
+}
+
+function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number, color: string) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function setText(ctx: CanvasRenderingContext2D, font: string, color?: string, align?: CanvasTextAlign, baseline?: CanvasTextBaseline) {
+    ctx.font = font;
+    ctx.fillStyle = color || cfg.secondTextColor;
+    ctx.textAlign = align || 'start';
+    ctx.textBaseline = baseline || 'top';
+}
+
+export async function generateImage(data: Schedule, type: ScheduleType): Promise<Buffer> {
     const weekDays = Object.keys(data);
 
-    // Заголовок недели по центру
-    ctx.textAlign = 'center';
-    ctx.fillText(data[weekDays[0]][0].weekTitle, baseWidth / 2, 20);
+    function calcImageHeight() {
+        let totalHeight = 0;
 
-    ctx.textAlign = 'start';
-
-    // Координаты для столбцов
-    const columnX = [10, baseWidth / 2 + 10]; // левый и правый столбец
-    const columnYStart = 60;
-    const maxDaysInFirstColumn = 3;
-
-    let colIndex = 0;
-    let y = columnYStart;
-
-    weekDays.forEach((day, index) => {
-        // Переключаемся на второй столбец
-        if (index === maxDaysInFirstColumn) {
-            colIndex = 1;
-            y = columnYStart;
+        for (const dayKey of weekDays) {
+            const dayLessons = data[dayKey];
+            totalHeight += calcDayHeight(dayLessons) + 28 + 8;
         }
 
-        ctx.font = 'bold 16px Roboto';
-        ctx.fillText(formatText(day), columnX[colIndex], y);
-        y += 20;
+        return totalHeight + 58 + 20;
+    }
 
-        ctx.font = '14px Roboto';
-        for (const lesson of data[day]) {
-            ctx.fillText(
-                `${lesson.number}. ${lesson.name} ${lesson.subgroup ? `(${lesson.subgroup})` : ''}`,
-                columnX[colIndex] + 10,
-                y
-            );
-            ctx.fillText(
-                `${lesson.teacherNormalized}. ${lesson.audience} ${lesson.group}`,
-                columnX[colIndex] + 10,
-                y+14
-            );
-            y += 35;
-        }
-        y += 10; // отступ между днями
-    });
+    function getFirstValue(obj: Record<any, any>) {
+        return obj[Object.keys(obj)[0]];
+    }
+
+    const width = 800 * cfg.scale;
+    const height = calcImageHeight() * cfg.scale;
+
+    const canvas = createCanvas(width, height);
+    const ctx: CanvasRenderingContext2D = canvas.getContext('2d');
+
+    ctx.scale(cfg.scale, cfg.scale);
+
+    const baseWidth = width / cfg.scale;
+    const baseHeight = height / cfg.scale;
+
+    // Фон
+    ctx.fillStyle = cfg.backgroundColor;
+    ctx.fillRect(0, 0, baseWidth, baseHeight);
+
+    const param = getFirstValue(getFirstValue(data))[0][type === 'teacher' ? 'teacherNormalized' : type];
+
+    setText(ctx, '16px Arial', cfg.secondTextColor, 'start', 'top');
+    const title = `Расписание для `;
+    ctx.fillText(title, 20, 20);
+
+    const titleStartWidth = ctx.measureText(title).width;
+    setText(ctx, '16px Arial', cfg.textColor, 'start', 'top');
+    ctx.fillText(param + ' ', 20 + titleStartWidth, 20);
+
+    const titleParamWidth = ctx.measureText(param + ' ').width;
+    setText(ctx, '16px Arial', cfg.secondTextColor, 'start', 'top');
+    ctx.fillText(getFirstValue(getFirstValue(data))[0].weekTitle, 20 + titleParamWidth + titleStartWidth, 20);
+
+
+    setText(ctx, '12px Arial', cfg.secondTextColor, 'right');
+    ctx.fillText('Ауд.', baseWidth - 30, 64); // аудитория
+
+
+    function generateLessons(lessons: Lesson[], numberOfLesson: number, startY: number): number {
+        let currentY = startY;
+
+        setText(ctx, '10px Arial', cfg.secondTextColor, 'start');
+        ctx.fillText('09:20-10:40', 66, currentY); // время
+
+        currentY += 12;
+        setText(ctx, '16px Arial', cfg.textColor, 'start');
+        ctx.fillText(numberOfLesson.toString() + '.', 40, currentY); // номер пары
+
+        lessons.forEach((lesson, index) => {
+
+            setText(ctx, '16px Arial', cfg.textColor, 'start');
+            ctx.fillText(`${lesson.name}${lesson.subgroup ? ` - ${lesson.subgroup} подгруппа` : ''}`, 66, currentY, baseWidth - 66 - 90); // предмет + подгруппа
+
+            currentY += 2;
+            setText(ctx, '16px Arial', cfg.secondTextColor, 'right');
+            ctx.fillText(lesson.audience || '-', baseWidth - 30, currentY); // аудитория
+
+            currentY += 16;
+
+            let groupWidth = 0;
+            if (type === 'teacher') {
+                setText(ctx, '14px Arial', cfg.secondTextColor, 'start');
+                ctx.fillText(lesson.group + ' - ', 66, currentY);
+                groupWidth = ctx.measureText(lesson.group).width + 16;
+            }
+            setText(ctx, '14px Arial', cfg.secondTextColor, 'start');
+            ctx.fillText(lesson.teacher, 66 + groupWidth, currentY); // группа / преподователь
+
+
+            if (index < lessons.length - 1) {
+                currentY += 18;
+            }
+
+        });
+
+        return currentY + 8 + 14;
+    }
+
+    function generateDay(day: DayLessons, startY: number) {
+        setText(ctx, '16px Arial', cfg.textColor, 'start', 'top');
+        ctx.fillText(formatText(getFirstValue(day)[0].day), 20, startY); // день недели
+
+        let currentY = startY + 28;
+        const lessonsKeys = Object.keys(day).map(Number);
+        const dayHeight = calcDayHeight(day);
+
+        drawRoundedRect(
+            ctx,
+            20,
+            currentY,
+            baseWidth - 40,
+            dayHeight,
+            cfg.borderRadius,
+            cfg.dayBackgroundColor,
+        );
+
+        let newY = currentY + 8;
+        lessonsKeys.forEach((key, index) => {
+
+            if (day[key][0].isFullDay) {
+                currentY += 12;
+                setText(ctx, '14px Arial', cfg.secondTextColor, 'center');
+                ctx.fillText(day[key][0].name, baseWidth / 2, currentY + 8);
+            } else {
+                newY = generateLessons(day[key], key, newY);
+
+                if (index < lessonsKeys.length - 1) {
+                    const lineY = newY;
+                    ctx.strokeStyle = 'rgba(5, 5, 5, 0.1)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(30, lineY);
+                    ctx.lineTo(baseWidth - 30, lineY);
+                    ctx.stroke();
+                }
+            }
+
+            newY += 8;
+
+        });
+
+        return dayHeight + 28 + 8;
+    }
+
+    let currentY = 58;
+    for (const dayKey of weekDays) {
+        const dayLessons = data[dayKey];
+        currentY += generateDay(dayLessons, currentY);
+    }
 
     return canvas.toBuffer('image/png');
 }

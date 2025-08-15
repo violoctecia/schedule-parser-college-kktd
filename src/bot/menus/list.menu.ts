@@ -7,7 +7,8 @@ export async function showListMenu(
     ctx: MyContext,
     page = 0,
     type: ScheduleType,
-    text: string
+    text: string,
+    isNewMessage: boolean = false,
 ) {
     const list = await cacheService.getList(type);
 
@@ -19,7 +20,7 @@ export async function showListMenu(
                 page,
                 6,
                 item => item.teacherNormalized,
-                item => item.teacherId
+                item => item.teacherId,
             )
             : getPaginatedKeyboard(
                 type,
@@ -27,11 +28,18 @@ export async function showListMenu(
                 page,
                 6,
                 item => item,
-                item => item
+                item => item,
             );
 
-    await ctx.editMessageText(text, {
-        reply_markup: keyboard,
-    });
+    if (isNewMessage) {
+        await ctx.reply(text, {
+            reply_markup: keyboard,
+        });
+    } else {
+        await ctx.editMessageText(text, {
+            reply_markup: keyboard,
+        });
+    }
+
 }
 

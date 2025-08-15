@@ -1,5 +1,5 @@
 import { WeekScheduleModel } from '@/src/database/schedule/week-schedule.model.js';
-import type { Lesson, ScheduleType, WeekLessons } from '@/src/types/schedule.js';
+import type { Lesson, Schedule, ScheduleType, WeekLessons } from '@/src/types/schedule.js';
 
 export const scheduleService = {
 
@@ -14,27 +14,49 @@ export const scheduleService = {
         return `✅ Schedule for week ${data.weekTitle} created`;
     },
 
-    async searchBy(weekTitle: string, param: 'teacherId' | 'group' | 'name' | 'audience', value: string) {
+    async getScheduleBy(weekTitle: string, param: 'teacherId' | 'group' | 'name' | 'audience', value: string): Promise<Schedule | string> {
         const allowedParams = ['teacherId', 'group', 'name', 'audience'];
         if (!allowedParams.includes(param)) {
-            return {err: `❌ Invalid param ${param}`};
+            return `❌ Invalid param ${param}`;
         }
         const weekSchedule = await WeekScheduleModel.findOne({ weekTitle });
         if (!weekSchedule) {
-            return {err: `❌ Week ${weekTitle} not found`};
+            return `❌ Week ${weekTitle} not found`;
         }
-        const result = weekSchedule.lessons.filter(lesson => lesson[param] === value);
 
-        const newObj: Record<string, Lesson[]> = {};
+        const filteredLessons = weekSchedule.lessons.filter(
+            lesson => lesson[param] === value
+        );
 
-        result.forEach(lesson => {
-            if (!newObj[lesson.day]) {
-                newObj[lesson.day] = [];
+        // Группируем по дням и по номерам пар
+        const grouped: Schedule = {};
+
+        filteredLessons.forEach(lesson => {
+            if (!grouped[lesson.day]) {
+                grouped[lesson.day] = {};
             }
-            newObj[lesson.day].push(lesson);
+
+            const dayObj = grouped[lesson.day];
+
+            if (!dayObj[lesson.number]) {
+                dayObj[lesson.number] = [];
+            }
+
+            dayObj[lesson.number].push(lesson);
         });
 
-        return newObj;
+        // Сортируем дни и номера пар
+        Object.keys(grouped).forEach(day => {
+            const sortedByNumber: Record<number, Lesson[]> = {};
+            Object.keys(grouped[day])
+                .sort((a, b) => Number(a) - Number(b))
+                .forEach(num => {
+                    sortedByNumber[Number(num)] = grouped[day][Number(num)];
+                });
+            grouped[day] = sortedByNumber;
+        });
+        console.log(JSON.stringify(grouped, null, 2));
+        return grouped;
     },
 
     async findAllByType(type: ScheduleType): Promise<string[]> {
@@ -78,6 +100,4 @@ export const scheduleService = {
         return Array.from(uniqueMap.values())
             .sort((a, b) => a.teacherNormalized.localeCompare(b.teacherNormalized));
     }
-
-
 };

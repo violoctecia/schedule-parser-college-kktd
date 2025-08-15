@@ -61,7 +61,7 @@ export async function handleManualInput(ctx: MyContext, type: ScheduleType, valu
                 { reply_markup: keyboard },
             );
         } else {
-            await showListMenu(ctx, 0, type as ScheduleType, `❌ Не удалось найти вашу группу и похожих вариантов в таблице на текущую неделю.\n\nПопробуйте поискать среди готовых вариантов или ввести группу вручную еще раз.`);
+            await showListMenu(ctx, 0, type as ScheduleType, `❌ Не удалось найти вашу группу и похожих вариантов в таблице на текущую неделю.\n\nПопробуйте поискать среди готовых вариантов или ввести группу вручную еще раз.`, true);
         }
     }
 }

@@ -10,7 +10,7 @@ export async function showSelectTypeMenu(ctx: MyContext, isEdit: boolean = false
             .row()
             .text('🏫 Поиск по аудитории', 'list_audience')
             .row()
-            .text('📚 Поиск по предмету', 'list_subject'),
+            .text('📚 Поиск по предмету', 'list_name'),
     };
 
     if (isEdit) {
