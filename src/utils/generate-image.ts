@@ -2,10 +2,11 @@ import { createCanvas, CanvasRenderingContext2D } from 'canvas';
 
 import { Lesson, Schedule, ScheduleType, DayLessons } from '@/src/types/schedule.js';
 import { formatText } from '@/src/utils/format-text.js';
+import { getTimeForLesson } from '@/src/utils/lesson-time.js';
 
 const cfg = {
-    backgroundColor: '#e6e6e6',
-    dayBackgroundColor: '#fff',
+    backgroundColor: '#dcdaef',
+    dayBackgroundColor: '#fffffd',
     textColor: '#050505',
     secondTextColor: 'rgba(5, 5, 5, 0.6)',
     lineColor: 'rgba(5, 5, 5, 0.1)',
@@ -118,8 +119,9 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
     function generateLessons(lessons: Lesson[], numberOfLesson: number, startY: number): number {
         let currentY = startY;
 
-        setText(ctx, '10px Arial', cfg.secondTextColor, 'start');
-        ctx.fillText('09:20-10:40', 66, currentY); // время
+        const time = getTimeForLesson(numberOfLesson, lessons[0].group, lessons[0].day);
+        setText(ctx, '12px Arial', cfg.secondTextColor, 'start');
+        ctx.fillText(time, 66, currentY - 2); // время
 
         currentY += 12;
         setText(ctx, '16px Arial', cfg.textColor, 'start');
