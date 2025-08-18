@@ -1,4 +1,4 @@
-import { parse, format } from "date-fns"
+import { parse } from "date-fns";
 
 const formats = [
     "dd.MM.yyyy",
@@ -9,26 +9,16 @@ const formats = [
     "d.MM.yy",
     "d.M.yy",
     "dd.M.yy",
-]
+];
 
-export function normalizeDate(input: string): string {
-    let parsedDate: Date | null = null
-
+export function normalizeDate(input: string): Date {
     for (const fmt of formats) {
         try {
-            const date = parse(input, fmt, new Date())
+            const date = parse(input, fmt, new Date());
             if (!isNaN(date.getTime())) {
-                parsedDate = date
-                break
+                return date;
             }
-        } catch (e) {
-
-        }
+        } catch (_) {}
     }
-
-    if (!parsedDate) {
-        throw new Error(`Не удалось распарсить дату: ${input}`)
-    }
-
-    return format(parsedDate, "dd.MM.yyyy")
+    throw new Error(`Не удалось распарсить дату: ${input}`);
 }

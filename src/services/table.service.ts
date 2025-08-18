@@ -351,8 +351,10 @@ const tableService = {
         const weekLessons: WeekLessons = {
             lessons: [],
             weekTitle: this.weekTitle,
+            weekTitleId: this.weekTitle.toLowerCase().replace(/[\s.-]/g, ''),
             startDate: this.parseDate().start,
             endDate: this.parseDate().end,
+            isCurrent: false,
         };
 
         const pairs = this.groups.flatMap(group =>

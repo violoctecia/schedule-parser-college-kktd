@@ -24,8 +24,10 @@ const LessonSchema = new Schema<ILesson>({
 const WeekScheduleSchema = new Schema<IWeekLessons>({
     lessons: { type: [LessonSchema], required: true },
     weekTitle: { type: String, required: true },
-    startDate: { type: String, required: true },
-    endDate: { type: String, required: true },
+    weekTitleId: { type: String, required: true },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, required: true },
+    isCurrent: {type: Boolean, default: false},
 });
 
 

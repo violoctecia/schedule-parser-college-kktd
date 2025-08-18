@@ -19,16 +19,6 @@ export function registerCallbacks(bot: Bot<MyContext>) {
         await ctx.answerCallbackQuery();
     });
 
-    bot.callbackQuery('back_to_select_menu', async (ctx) => {
-        await ctx.editMessageReplyMarkup({
-            reply_markup: {
-                inline_keyboard: [],
-            },
-        });
-        await showSelectTypeMenu(ctx);
-        await ctx.answerCallbackQuery();
-    });
-
     // Show list
     bot.callbackQuery(/list.+/, async (ctx) => {
         const data = ctx.callbackQuery.data;
@@ -43,7 +33,15 @@ export function registerCallbacks(bot: Bot<MyContext>) {
         const data = ctx.callbackQuery.data;
         const [, type, value] = data.split('_');
 
-        await sendSchedule(ctx, type as ScheduleType, value);
+        await sendSchedule(ctx, type as ScheduleType, value, 'current');
+        await ctx.answerCallbackQuery();
+    });
+
+    bot.callbackQuery(/schedule.+/, async (ctx) => {
+        const data = ctx.callbackQuery.data;
+        const [, position, type, value] = data.split('_');
+
+        await sendSchedule(ctx, type as ScheduleType, value, position as 'current' | 'next');
         await ctx.answerCallbackQuery();
     });
 
@@ -55,17 +53,17 @@ export function registerCallbacks(bot: Bot<MyContext>) {
         const msg = {
             group: {
                 text: 'группу <b>(например: 09.02.07-1)</b>',
-                placeholder: '09.02.07-'
+                placeholder: '09.02.07-',
             },
             teacher: {
                 text: 'преподавателя <b>(например: Харитонова)</b>',
-                placeholder: 'Харитонова..'
+                placeholder: 'Харитонова..',
             },
             audience: {
                 text: 'аудиторию <b>(например: 306)</b>',
-                placeholder: '311?'
-            }
-        }
+                placeholder: '311?',
+            },
+        };
 
         await ctx.deleteMessage();
         await ctx.reply(`В ответе на это сообщение попробуйте вручную ввести ${msg[type as ScheduleType].text}, в случае неправильного ввода <b>бот подскажет</b> варианты, которые возможно вы имели ввиду\n\n/menu - вернуться в главное меню`, {

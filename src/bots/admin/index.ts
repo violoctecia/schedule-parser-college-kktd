@@ -1,12 +1,16 @@
 import { Bot, InlineKeyboard, session } from 'grammy';
-import { cfg } from '@/src/config.js';
 import { AdminContext, AdminSessionData } from '@/src/types/bot.js';
 import tableService from '@/src/services/table.service.js';
+import { scheduleService } from '@/src/database/schedule/schedule.service.js';
+import { cfg } from '@/src/config.js';
+import { showScheduleList } from '@/src/bots/admin/schedule-titles.menu.js';
 
 export const bot = new Bot<AdminContext>(cfg.botAdminToken);
+
 function initial(): AdminSessionData {
     return { step: '' };
 }
+
 bot.use(session({ initial }));
 bot.api.config.use((prev, method, payload) =>
     prev(method, {
@@ -16,14 +20,20 @@ bot.api.config.use((prev, method, payload) =>
     }),
 );
 
+const texts = {
+    'delete': 'Выберите расписание из списка, которое хотите удалить\n\n ✅ - текущее активное расписание',
+    'active': 'Выберите расписание из списка, которое хотите сделать активным (активное расписание будет выдаваться пользователям по умолчанию в основном боте)\n\n ✅ - текущее активное расписание',
+}
+
 const mainMenuKeyboard = {
     reply_markup: new InlineKeyboard()
-        .text('Загрузить новое расписание', 'new')
+        .text('🆕 Загрузить новое расписание', 'new')
         .row()
-        .text('Отправить уведомление', 'notification')
-        .text('Удалить расписание', 'delete')
+        .text('🔔 Отправить всем уведомление', 'notification')
         .row()
-        .text('Сменить активное расписание', 'active'),
+        .text('🗑️ Удалить расписание', 'delete')
+        .row()
+        .text('📌 Сменить активное расписание', 'active'),
 };
 
 bot.command('start', async (ctx) => {
@@ -49,7 +59,6 @@ bot.on('message:document', async (ctx) => {
 
     try {
         const file = await ctx.getFile();
-
         if (!file.file_path) {
             await ctx.reply('❌ Не удалось получить путь к файлу на сервере Telegram', mainMenuKeyboard);
             return;
@@ -59,10 +68,10 @@ bot.on('message:document', async (ctx) => {
         const response = await fetch(fileUrl);
         const buffer = Buffer.from(await response.arrayBuffer());
 
-        await ctx.reply(`Файл ${doc.file_name} успешно загружен на сервер! Парсер запущен, по готовности вы получите уведомление`, mainMenuKeyboard);
+        await ctx.reply(`Файл ${doc.file_name} успешно загружен на сервер! Парсер запущен, по готовности вы получите уведомление, пожалуйста, подождите...`);
 
         const result = await tableService.load(undefined, buffer);
-        await ctx.deleteMessage()
+
         await ctx.reply(result, mainMenuKeyboard);
     } catch (err) {
         console.error('Ошибка при загрузке файла:', err);
@@ -71,7 +80,6 @@ bot.on('message:document', async (ctx) => {
         ctx.session.step = 'menu';
     }
 });
-
 
 bot.callbackQuery('menu', async (ctx) => {
     ctx.session.step = 'menu';
@@ -82,9 +90,53 @@ bot.callbackQuery('menu', async (ctx) => {
 
 bot.callbackQuery('new', async (ctx) => {
     ctx.session.step = 'new';
-    await ctx.editMessageText('Пришли таблицу с расписанием в формате .xlsx', {
+    await ctx.editMessageText('Загрузите или перешлите в этот чат новую таблицу с расписанием в формате .xlsx', {
         reply_markup: new InlineKeyboard().text('Назад', 'menu'),
     });
+    await ctx.answerCallbackQuery();
+});
+
+bot.callbackQuery('active', async (ctx) => {
+    await showScheduleList(ctx, 0, 'active', texts.active);
+    await ctx.answerCallbackQuery();
+});
+
+bot.callbackQuery('delete', async (ctx) => {
+    await showScheduleList(ctx, 0, 'delete', texts.delete);
+    await ctx.answerCallbackQuery();
+});
+
+// Pick value of type
+bot.callbackQuery(/select_.+/, async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    const [, type, value] = data.split('_');
+
+    switch (type) {
+        case 'active':
+            await scheduleService.setCurrent(value);
+
+            await ctx.editMessageText('Активное расписание успешно изменено', mainMenuKeyboard);
+            break;
+        case 'delete':
+            scheduleService.delete(value);
+            await ctx.editMessageText('Расписание удалено', mainMenuKeyboard);
+            break;
+    }
+
+    await ctx.answerCallbackQuery();
+});
+
+// Navigation list
+bot.callbackQuery(/page_(active|delete)_\d+/, async (ctx) => {
+    const data = ctx.callbackQuery.data;
+    const regex = /^page_(active|delete)_(.+)$/;
+    const match = data.match(regex);
+    if (!match) return;
+
+    const type = match[1] as 'active' | 'delete';
+    const page = Number(match[2].trim());
+
+    await showScheduleList(ctx, page, type, texts[type]);
     await ctx.answerCallbackQuery();
 });
 

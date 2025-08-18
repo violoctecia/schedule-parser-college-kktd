@@ -6,7 +6,7 @@ import { generateImage } from '@/src/utils/generate-image.js';
 import { cfg } from '@/src/config.js';
 
 type List = Key[];
-type ImageKey = `${ScheduleType}_${string}_part_${number}`;
+type ImageKey = `${ScheduleType}_${string}_${'current' | 'next'}_part_${number}`;
 
 class CacheService {
     private cacheLists = new Map<ScheduleType, List>();
@@ -67,16 +67,16 @@ class CacheService {
         return data;
     }
 
-    async getImage(type: ScheduleType, value: string): Promise<Buffer[] | null> {
-        console.log(this.cacheSize / 1024 / 1024, 'MB');
+    async getImage(type: ScheduleType, value: string, position: 'current' | 'next'): Promise<Buffer[] | null> {
         const buffers: Buffer[] = [];
         let idx = 1;
 
         while (true) {
-            const key: ImageKey = `${type}_${value}_part_${idx}`;
+            const key: ImageKey = `${type}_${value}_${position}_part_${idx}`;
             const buf = this.cacheImages.get(key);
             if (!buf) break;
 
+            // LRU обновление
             const pos = this.cacheOrder.indexOf(key);
             if (pos >= 0) {
                 this.cacheOrder.splice(pos, 1);
@@ -90,7 +90,7 @@ class CacheService {
         if (buffers.length > 0) return buffers;
 
         const typeMap = { group: 'groupId', teacher: 'teacherId', audience: 'audienceId' } as const;
-        const schedule = await scheduleService.getScheduleBy('с 23.07.2025 г. по 30.09.2025 г.', typeMap[type], value);
+        const schedule = await scheduleService.getScheduleBy(position, typeMap[type], value);
         if (!schedule || typeof schedule === 'string') return null;
 
         const scheduleParts = this.splitSchedule(schedule as Schedule, 18);
@@ -100,13 +100,14 @@ class CacheService {
             const buffer = await generateImage(part, type);
             if (!buffer) continue;
 
-            const key: ImageKey = `${type}_${value}_part_${i + 1}`;
+            const key: ImageKey = `${type}_${value}_${position}_part_${i + 1}`;
             this.addToCache(key, buffer);
             buffers.push(buffer);
         }
 
         return buffers.length > 0 ? buffers : null;
     }
+
 
     clear() {
         this.cacheLists.clear();

@@ -30,8 +30,10 @@ export type Lesson = {
 export type WeekLessons = {
     lessons: Lesson[];
     weekTitle: string;
-    startDate: string;
-    endDate: string;
+    weekTitleId: string;
+    startDate: Date;
+    endDate: Date;
+    isCurrent: boolean;
 }
 
 export type ScheduleType = 'group' | 'teacher' | 'audience';
