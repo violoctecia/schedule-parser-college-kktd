@@ -1,9 +1,9 @@
 import { Bot } from 'grammy';
-import { showListMenu } from '@/src/bot/menus/list.menu.js';
-import { ScheduleType } from '@/src/types/schedule.js';
-import { showSelectTypeMenu } from '@/src/bot/menus/select-type.menu.js';
 import { MyContext } from '@/src/types/bot.js';
-import { sendSchedule } from '@/src/bot/utils/send-schedule.js';
+import { ScheduleType } from '@/src/types/schedule.js';
+import { showSelectTypeMenu } from '@/src/bots/main/menus/select-type.menu.js';
+import { sendSchedule } from '@/src/bots/main/utils/send-schedule.js';
+import { showListMenu } from '@/src/bots/main/menus/list.menu.js';
 
 const listMenuTexts = {
     group: '👥 <b>Выберите группу</b> из предложенных вариантов\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот подскажет варианты',

@@ -1,15 +1,13 @@
 import { MyContext } from '@/src/types/bot.js';
-import { cacheService } from '@/src/services/cache.service.js';
 import { ScheduleType } from '@/src/types/schedule.js';
-import { showListMenu } from '@/src/bot/menus/list.menu.js';
+import { cacheService } from '@/src/services/cache.service.js';
+import { showListMenu } from '@/src/bots/main/menus/list.menu.js';
 import { findClosest } from '@/src/utils/find-closest.js';
-import { getPaginatedKeyboard } from '@/src/bot/utils/keyboards.js';
-import { sendSchedule } from '@/src/bot/utils/send-schedule.js';
+import { getPaginatedKeyboard } from '@/src/bots/main/utils/keyboards.js';
+import { sendSchedule } from '@/src/bots/main/utils/send-schedule.js';
 import { normalizeTeacher } from '@/src/utils/normalize-teacher.js';
 
-
 export async function handleManualInput(ctx: MyContext, type: ScheduleType, value: string) {
-
     const list = await cacheService.getList(type);
 
     const listValues = list.map(o => o.normalizedValue);
@@ -23,7 +21,6 @@ export async function handleManualInput(ctx: MyContext, type: ScheduleType, valu
         }
         await returnClosest(listIds, value);
     }
-
 
     async function returnClosest(stringList: string[], value: string) {
         let closeMatches = findClosest(stringList, value, 3);

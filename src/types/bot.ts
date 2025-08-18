@@ -1,8 +1,13 @@
 import { Context, SessionFlavor } from 'grammy';
-import { ScheduleType } from '@/src/types/schedule.js';
 
 export interface SessionData {
 
 }
 
 export type MyContext = Context & SessionFlavor<SessionData>;
+
+export interface AdminSessionData {
+    step: string;
+}
+
+export type AdminContext = Context & SessionFlavor<AdminSessionData>;

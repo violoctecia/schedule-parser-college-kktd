@@ -1,9 +1,8 @@
+import { InlineKeyboard, InputFile } from 'grammy';
 import { ScheduleType } from '@/src/types/schedule.js';
 import { MyContext } from '@/src/types/bot.js';
 import { cacheService } from '@/src/services/cache.service.js';
-import { InlineKeyboard, InputFile } from 'grammy';
-import { sendScheduleText } from '@/src/bot/texts.js';
-
+import { sendScheduleText } from '@/src/bots/main/texts.js';
 
 export async function sendSchedule(ctx: MyContext, type: ScheduleType, value: string) {
     await ctx.editMessageText('Пару секунд, готовим расписание..');
@@ -23,7 +22,7 @@ export async function sendSchedule(ctx: MyContext, type: ScheduleType, value: st
     await ctx.editMessageText('Еще немного...');
 
     if (buffers.length > 1) {
-        const mediaGroup = buffers.map((buf, idx) => (
+        const mediaGroup = buffers.map(buf => (
             {
                 type: 'photo' as const,
                 media: new InputFile(buf),

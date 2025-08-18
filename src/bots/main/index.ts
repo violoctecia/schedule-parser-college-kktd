@@ -1,15 +1,15 @@
-import { cfg } from '@/src/config.js';
-import { registerCallbacks } from '@/src/bot/callbacks.js';
 import { Bot, InlineKeyboard, session } from 'grammy';
 import { MyContext, SessionData } from '@/src/types/bot.js';
-import { showSelectTypeMenu } from '@/src/bot/menus/select-type.menu.js';
 import { ScheduleType } from '@/src/types/schedule.js';
-import { handleManualInput } from '@/src/bot/utils/manual-input.js';
+import { cfg } from '@/src/config.js';
+import { registerCallbacks } from '@/src/bots/main/callbacks.js';
+import { handleManualInput } from '@/src/bots/main/utils/manual-input.js';
+import { showSelectTypeMenu } from '@/src/bots/main/menus/select-type.menu.js';
 
 export const bot = new Bot<MyContext>(cfg.botToken);
 
 function initial(): SessionData {
-    return {  };
+    return {};
 }
 
 bot.use(session({ initial }));

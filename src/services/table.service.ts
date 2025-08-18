@@ -28,10 +28,18 @@ const tableService = {
     groupsKeys: [] as Key[],
     audienceKeys: [] as Key[],
 
-    load(filePath: string) {
-        console.log('✅ Start loading table from', filePath);
+    async load(filePath?: string, buffer?: Buffer): Promise<string> {
+        console.log('✅ Start loading table', filePath ? 'from file' : 'from buffer');
 
-        const workbook = XLSX.readFile(filePath);
+        let workbook;
+        if (filePath) {
+            workbook = XLSX.readFile(filePath);
+        } else if (buffer) {
+            workbook = XLSX.read(buffer, { type: 'buffer' });
+        } else {
+            return 'Не передан filePath или buffer'
+        }
+
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         this.merges = sheet['!merges'] || [];
@@ -66,7 +74,7 @@ const tableService = {
         const formatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long' });
 
         this.weekTitle = this.cellInfo(startPoints.weekName, 0, 0)?.value || formatter.format(now);
-        this.fullParse();
+        return await this.fullParse();
     },
 
     cellInfo(address: string, colOffset = 0, rowOffset = 0): CellInfo | null {
@@ -358,6 +366,7 @@ const tableService = {
         const result = await scheduleService.create(weekLessons);
         console.log(result);
         cacheService.clear();
+        return result;
     },
 };
 

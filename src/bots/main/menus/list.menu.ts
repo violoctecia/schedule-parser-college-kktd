@@ -1,5 +1,5 @@
 import { MyContext } from '@/src/types/bot.js';
-import { getPaginatedKeyboard } from '@/src/bot/utils/keyboards.js';
+import { getPaginatedKeyboard } from '@/src/bots/main/utils/keyboards.js';
 import { cacheService } from '@/src/services/cache.service.js';
 import { ScheduleType } from '@/src/types/schedule.js';
 import { Key } from '@/src/types/keys.js';
