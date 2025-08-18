@@ -8,4 +8,5 @@ if (!process.env.BOT_TOKEN || !process.env.MONGO_URI) {
 export const cfg = {
     botToken: process.env.BOT_TOKEN,
     mongoURI: process.env.MONGO_URI,
+    imageMaxCacheSize: 40 * 1024 * 1024, // 40 МБ
 };

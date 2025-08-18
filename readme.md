@@ -25,4 +25,4 @@ The project automatically:
 ### Schedule Image Generation
 - File: `src/utils/generate-image.ts`
 - `cfg` contains settings for image generation (colors, rounded corners, scale).
-- The layout is optimized so that even large schedules remain readable on mobile devices.  
+- The layout is optimized so that even large schedules remain readable on mobile devices.

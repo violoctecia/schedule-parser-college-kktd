@@ -32,7 +32,7 @@ export async function sendSchedule(ctx: MyContext, type: ScheduleType, value: st
 
         await ctx.replyWithMediaGroup(mediaGroup);
         await ctx.deleteMessage();
-        await ctx.reply(`⬆️ ${sendScheduleText[type]} <b>${value}</b>\nс 23.01.2025 г. по 30.06.2025 г.\n\nВаше расписание оказалось несколько большим, поэтому мы разделили его на несколько изображений.`,
+        await ctx.reply(`⬆️ ${sendScheduleText[type]} <b>${value}</b>\nс 23.01.2025 г. по 30.06.2025 г.\n\nВаше расписание оказалось несколько больше, чем можно уместить в одно изображение, поэтому мы разделили его на несколько частей.`,
             {
                 reply_markup: new InlineKeyboard().text('Вернуться к выбору', 'back_to_select_menu'),
             });
