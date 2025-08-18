@@ -14,8 +14,8 @@ export const scheduleService = {
         return `✅ Schedule for week ${data.weekTitle} created`;
     },
 
-    async getScheduleBy(weekTitle: string, param: 'teacherId' | 'group' | 'name' | 'audience', value: string): Promise<Schedule | string> {
-        const allowedParams = ['teacherId', 'group', 'name', 'audience'];
+    async getScheduleBy(weekTitle: string, param: 'teacherId' | 'groupId' | 'audienceId', value: string): Promise<Schedule | string> {
+        const allowedParams = ['teacherId', 'groupId', 'audienceId'];
         if (!allowedParams.includes(param)) {
             return `❌ Invalid param ${param}`;
         }
@@ -25,10 +25,9 @@ export const scheduleService = {
         }
 
         const filteredLessons = weekSchedule.lessons.filter(
-            lesson => lesson[param] === value
+            lesson => lesson[param] === value,
         );
 
-        // Группируем по дням и по номерам пар
         const grouped: Schedule = {};
 
         filteredLessons.forEach(lesson => {
@@ -45,7 +44,6 @@ export const scheduleService = {
             dayObj[lesson.number].push(lesson);
         });
 
-        // Сортируем дни и номера пар
         Object.keys(grouped).forEach(day => {
             const sortedByNumber: Record<number, Lesson[]> = {};
             Object.keys(grouped[day])
@@ -55,49 +53,8 @@ export const scheduleService = {
                 });
             grouped[day] = sortedByNumber;
         });
-        console.log(JSON.stringify(grouped, null, 2));
+
         return grouped;
     },
 
-    async findAllByType(type: ScheduleType): Promise<string[]> {
-        const weekSchedule = await WeekScheduleModel
-            .findOne()
-            .sort({ _id: -1 }); // берём последний добавленный документ
-        if (!weekSchedule) {
-            console.log(`❌ No one week not found`);
-            return [] as string[];
-        }
-        return [
-            ...new Set(
-                weekSchedule.lessons
-                    .map(l => l[type])
-                    .filter(v => v && String(v).trim() !== '')
-            )
-        ];
-    },
-
-    async findAllTeachers(): Promise<{ teacherId: string; teacherNormalized: string }[]> {
-        const weekSchedule = await WeekScheduleModel
-            .findOne()
-            .sort({ _id: -1 }); // берём последний добавленный документ
-
-        if (!weekSchedule) {
-            console.log(`❌ No one week not found`);
-            return [];
-        }
-
-        const uniqueMap = new Map<string, { teacherId: string; teacherNormalized: string }>();
-
-        for (const lesson of weekSchedule.lessons) {
-            if (lesson.teacherId && lesson.teacherNormalized) {
-                uniqueMap.set(lesson.teacherId, {
-                    teacherId: lesson.teacherId,
-                    teacherNormalized: lesson.teacherNormalized
-                });
-            }
-        }
-
-        return Array.from(uniqueMap.values())
-            .sort((a, b) => a.teacherNormalized.localeCompare(b.teacherNormalized));
-    }
 };

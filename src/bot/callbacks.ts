@@ -1,9 +1,6 @@
-import { InlineKeyboard, Bot, InputFile } from 'grammy';
+import { Bot } from 'grammy';
 import { showListMenu } from '@/src/bot/menus/list.menu.js';
 import { ScheduleType } from '@/src/types/schedule.js';
-import { cacheService } from '@/src/services/cache.service.js';
-import { scheduleService } from '@/src/database/schedule/schedule.service.js';
-import { generateImage } from '@/src/utils/generate-image.js';
 import { showSelectTypeMenu } from '@/src/bot/menus/select-type.menu.js';
 import { MyContext } from '@/src/types/bot.js';
 import { sendSchedule } from '@/src/bot/utils/send-schedule.js';
@@ -67,10 +64,6 @@ export function registerCallbacks(bot: Bot<MyContext>) {
             audience: {
                 text: 'аудиторию <b>(например: 306)</b>',
                 placeholder: '311?'
-            },
-            name: {
-                text: 'предмет <b>(например: Обществознание)</b>',
-                placeholder: 'Химия?'
             }
         }
 
@@ -87,13 +80,13 @@ export function registerCallbacks(bot: Bot<MyContext>) {
     // Navigation list
     bot.callbackQuery(/page_(group|teacher|audience|subject)_\d+/, async (ctx) => {
         const data = ctx.callbackQuery.data;
-        const regex = /^page_(group|teacher)_(.+)$/;
+        const regex = /^page_(group|teacher|audience)_(.+)$/;
         const match = data.match(regex);
         if (!match) return;
 
         const type = match[1] as ScheduleType;
         const page = Number(match[2].trim());
-        console.log('nav', page);
+
         await showListMenu(ctx, page, type, listMenuTexts[type]);
         await ctx.answerCallbackQuery();
     });

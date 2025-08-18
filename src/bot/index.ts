@@ -50,8 +50,6 @@ bot.on('message:text', async (ctx) => {
         type = 'teacher';
     } else if (replyTo.text?.includes('аудиторию')) {
         type = 'audience';
-    } else if (replyTo.text?.includes('предмет')) {
-        type = 'name';
     }
 
     await handleManualInput(ctx, type as ScheduleType, userValue);

@@ -12,56 +12,46 @@ export async function handleManualInput(ctx: MyContext, type: ScheduleType, valu
 
     const list = await cacheService.getList(type);
 
-    if (type !== 'teacher') {
-        const listStrings = list as string[]; // тут строки
-        if (listStrings.includes(value)) {
-            await sendSchedule(ctx, type as ScheduleType, value);
-        } else {
-            await returnClosest(listStrings, value);
-        }
+    const listValues = list.map(o => o.normalizedValue);
+    const listIds = list.map(o => o.id);
+
+    if (listValues.includes(value)) {
+        await sendSchedule(ctx, type as ScheduleType, value);
     } else {
-        const listObjects = list as { teacherNormalized: string; teacherId: string }[];
-        const listIds = listObjects.map(o => o.teacherId);
-        const valueNormalized = normalizeTeacher(value);
-        await returnClosest(listIds, valueNormalized, true);
+        if (type === 'teacher') {
+            value = normalizeTeacher(value);
+        }
+        await returnClosest(listIds, value);
     }
 
 
-    async function returnClosest(stringList: string[], value: string, isTeachers: boolean = false) {
+    async function returnClosest(stringList: string[], value: string) {
         let closeMatches = findClosest(stringList, value, 3);
 
+        const texts = {
+            'group': 'вашу группу',
+            'teacher': 'это имя преподователя',
+            'audience': 'эту аудиторию',
+        };
+
         if (closeMatches?.length) {
-            let keyboard;
+            const filteredList = list.filter(o => closeMatches.includes(o.id));
 
-            if (isTeachers) {
-                const newList = list as { teacherNormalized: string; teacherId: string }[];
-                const filteredList = newList.filter(o => closeMatches?.includes(o.teacherId));
-
-                keyboard = getPaginatedKeyboard(
-                    type,
-                    filteredList as { teacherNormalized: string; teacherId: string }[],
-                    0,
-                    6,
-                    item => item.teacherNormalized,
-                    item => item.teacherId
-                )
-            } else {
-                keyboard = getPaginatedKeyboard(
-                    type,
-                    closeMatches as string[],
-                    0,
-                    6,
-                    item => item,
-                    item => item
-                );
-            }
+            let keyboard = getPaginatedKeyboard(
+                type,
+                filteredList,
+                0,
+                6,
+                item => item.normalizedValue,
+                item => item.id,
+            );
 
             await ctx.reply(
-                `👀 Не удалось найти вашу группу в таблице, <b>но есть ${closeMatches.length > 1 ? 'пару похожих вариантов:' : 'один похожий вариант'}</b>\n\n✏️ Если ни один из вариантов не подходит, можете попробовать ввести группу вручную еще раз.`,
+                `👀 Не удалось найти ${texts[type]} в текущей таблице расписания, <b>но есть ${closeMatches.length > 1 ? 'пару похожих вариантов:' : '1️⃣ один похожий вариант'}</b>\n\n✏️ Если ни один из вариантов не подходит, можете попробовать ввести вручную еще раз.`,
                 { reply_markup: keyboard },
             );
         } else {
-            await showListMenu(ctx, 0, type as ScheduleType, `❌ Не удалось найти вашу группу и похожих вариантов в таблице на текущую неделю.\n\nПопробуйте поискать среди готовых вариантов или ввести группу вручную еще раз.`, true);
+            await showListMenu(ctx, 0, type as ScheduleType, `❌ Не удалось найти ${texts[type]} и похожих вариантов в текущей таблице расписания.\n\nПопробуйте поискать среди готовых вариантов или ввести вручную еще раз.`, true);
         }
     }
 }

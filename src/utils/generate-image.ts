@@ -179,7 +179,7 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
             if (day[key][0].isFullDay) {
                 currentY += 12;
                 setText(ctx, '14px Arial', cfg.secondTextColor, 'center');
-                ctx.fillText(day[key][0].name, baseWidth / 2, currentY + 8);
+                ctx.fillText(day[key][0].name || 'Пустой день', baseWidth / 2, currentY + 8);
             } else {
                 newY = generateLessons(day[key], key, newY);
 

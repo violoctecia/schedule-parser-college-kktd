@@ -11,8 +11,10 @@ const LessonSchema = new Schema<ILesson>({
     teacherNormalized: { type: String, default: '' },
     teacherId: { type: String, default: '' },
     audience: { type: String, default: '' },
+    audienceId: { type: String, default: '' },
     subgroup: { type: Number },
     group: { type: String, required: true },
+    groupId: { type: String, default: '' },
     number: { type: Number, required: true },
     day: { type: String, required: true },
     weekTitle: { type: String, required: true },
@@ -22,6 +24,8 @@ const LessonSchema = new Schema<ILesson>({
 const WeekScheduleSchema = new Schema<IWeekLessons>({
     lessons: { type: [LessonSchema], required: true },
     weekTitle: { type: String, required: true },
+    startDate: { type: String, required: true },
+    endDate: { type: String, required: true },
 });
 
 

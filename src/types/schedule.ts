@@ -10,27 +10,31 @@ export type CellInfo = {
 
 export type Lesson = {
     name: string;
+    subgroup?: number;
+    number: number;
+    day: string;
+    weekTitle: string;
+    isFullDay?: boolean;
 
     teacher: string;
     teacherNormalized: string;
     teacherId: string;
 
     audience: string;
-    subgroup?: number;
-    group: string;
-    number: number;
+    audienceId: string;
 
-    day: string;
-    weekTitle: string;
-    isFullDay?: boolean;
+    group: string;
+    groupId: string;
 }
 
 export type WeekLessons = {
     lessons: Lesson[];
     weekTitle: string;
+    startDate: string;
+    endDate: string;
 }
 
-export type ScheduleType = 'group' | 'teacher' | 'name' | 'audience';
+export type ScheduleType = 'group' | 'teacher' | 'audience';
 
 export type DayLessons = Record<number, Lesson[]>
 export type Schedule = Record<string, DayLessons>

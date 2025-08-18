@@ -1,8 +1,11 @@
 import XLSX from 'xlsx';
-import type { CellInfo, Lesson, MergeMap, TableData, WeekLessons } from '@/src/types/schedule.js';
+import type { CellInfo, Lesson, MergeMap, ScheduleType, TableData, WeekLessons } from '@/src/types/schedule.js';
 import { scheduleService } from '@/src/database/schedule/schedule.service.js';
-import { findClosest } from '@/src/utils/find-closest.js';
 import { normalizeTeacher } from '@/src/utils/normalize-teacher.js';
+import { normalizeDate } from '@/src/utils/normalize-date.js';
+import { Key } from '@/src/types/keys.js';
+import { keysService } from '@/src/database/keys/keys.service.js';
+import { cacheService } from '@/src/services/cache.service.js';
 
 const startPoints = {
     groups: 'F10',
@@ -20,7 +23,10 @@ const tableService = {
     groups: [] as CellInfo[],
     days: [] as CellInfo[],
     weekTitle: '',
-    teachersMap: {} as Record<string, string>,
+
+    teacherKeys: [] as Key[],
+    groupsKeys: [] as Key[],
+    audienceKeys: [] as Key[],
 
     load(filePath: string) {
         console.log('✅ Start loading table from', filePath);
@@ -123,39 +129,84 @@ const tableService = {
         }
     },
 
-    setIdsToTeachers(lessons: Lesson[]) {
-        const normalizedTeacherList: string[] = Object.keys(this.teachersMap).map(teacher => normalizeTeacher(teacher));
+    async setId(value: unknown, type: Exclude<ScheduleType, 'teacher'>): Promise<Key> {
+        if (typeof value !== 'string' && typeof value !== 'number') {
+            return { normalizedValue: '', id: '' };
+        }
 
-        return lessons.map(lesson => {
-            const teacherId = findClosest(normalizedTeacherList, normalizeTeacher(lesson.teacherNormalized), 2, 1);
-            lesson.teacherId = teacherId ? teacherId[0] : '';
-            return lesson;
-        });
+        const str = value.toString().trim();
+        if (!str || str === '\'') {
+            return { normalizedValue: '', id: '' };
+        }
+
+        const newKey: Key = {
+            normalizedValue: str,
+            id: str.toLowerCase().replace(/[\s.-]/g, ''),
+        };
+
+        const keysArray =
+            type === 'group'
+                ? this.groupsKeys
+                : this.audienceKeys;
+
+        const foundExact = keysArray.find(i => i.id === newKey.id);
+        if (foundExact) return foundExact;
+
+        const res = await keysService.createKey(newKey.normalizedValue, newKey.id, type);
+        if (res) {
+            console.log(`Новый ключ для ${type}: `, res);
+            keysArray.push(res);
+            return res;
+        }
+
+        return newKey;
     },
 
-    parseDayLessonsFromGroup(day: CellInfo, group: CellInfo) {
+    async setIdToTeacher(teacherOriginalName: string): Promise<Key> {
+        if (!teacherOriginalName) return { normalizedValue: '', id: '' };
+        const newKey: Key = {
+            normalizedValue: normalizeTeacher(teacherOriginalName, true),
+            id: normalizeTeacher(teacherOriginalName),
+        };
+
+        const foundExact = this.teacherKeys.find(i => i.id === newKey.id);
+        if (foundExact) return foundExact;
+
+        const res = await keysService.createKey(newKey.normalizedValue, newKey.id, 'teacher');
+        if (res) {
+            console.log('Новый ключ для преподователя: ', res);
+            this.teacherKeys.push(res);
+            return res;
+        }
+
+        return newKey;
+    },
+
+    async parseDayLessonsFromGroup(day: CellInfo, group: CellInfo) {
         const lessons: Lesson[] = [];
+        const groupKey = await this.setId(group.value, 'group');
 
         const firstValue = this.cellInfo(`${group.startCol}${day.startRow}`, 0, 0);
         const secondValue = this.cellInfo(`${group.startCol}${day.startRow}`, 3, 1);
         // Проверка на полный день для группы, если день полный - учителя нет (ГОСУДАРСТВЕННАЯ ИТОГОВАЯ АТТЕСТАЦИЯ, и т.д.)
 
-        if (firstValue?.startAddress === secondValue?.startAddress) {
+        if (firstValue?.startAddress && firstValue?.startAddress === secondValue?.startAddress) {
             const lesson: Lesson = {
                 number: 1,
                 group: group.value,
+                groupId: groupKey.id,
                 name: firstValue?.value || '',
                 teacher: '',
                 teacherNormalized: '',
                 teacherId: '',
                 audience: '',
+                audienceId: '',
                 day: day.value,
                 weekTitle: this.weekTitle,
                 isFullDay: true,
             };
             return [lesson];
         }
-
 
         // Если не полный день, проходимя по всем занятим в дне
         const dayEndRow = parseInt(day.endAddress.slice(1));
@@ -171,23 +222,23 @@ const tableService = {
             currentRow++;
         }
 
-        const addNormalizedTeacherToMap = (teacher: string) => {
-            this.teachersMap[teacher] = '';
-        };
-
-        lessonNumbersPoints.forEach(lessonNum => {
+        for (const lessonNum of lessonNumbersPoints) {
             const row = lessonNum.startRow;
             let teacher;
-            let normalizedTeacher;
+            let teacherKey;
+            let audience;
+            let audienceKey;
 
             const lesson: Lesson = {
                 number: Number(lessonNum.value),
                 group: group.value,
+                groupId: groupKey.id,
                 name: '',
                 teacher: '',
                 teacherNormalized: '',
                 teacherId: '',
                 audience: '',
+                audienceId: '',
                 day: day.value,
                 weekTitle: this.weekTitle,
             };
@@ -195,36 +246,43 @@ const tableService = {
             const subgroup1Lesson = this.cellInfo(`${group.startCol}${row}`, 0, 0);
             const subgroup2Lesson = this.cellInfo(`${group.startCol}${row}`, 2, 0);
 
-            if (!subgroup1Lesson?.value && !subgroup2Lesson?.value) return;
+            if (!subgroup1Lesson?.value && !subgroup2Lesson?.value) continue;
 
             // Одна подгруппа, один урок - пушим один объект
             if (subgroup1Lesson?.startAddress === subgroup2Lesson?.startAddress) {
-
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
-                normalizedTeacher = normalizeTeacher(teacher, true);
-                addNormalizedTeacherToMap(normalizedTeacher);
+                teacherKey = await this.setIdToTeacher(teacher);
+                audience = this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '';
+                audienceKey = await this.setId(audience, 'audience');
 
                 lesson.teacher = teacher;
-                lesson.teacherNormalized = normalizedTeacher;
+                lesson.teacherNormalized = teacherKey.normalizedValue;
+                lesson.teacherId = teacherKey.id;
 
                 lesson.name = subgroup1Lesson?.value || '';
-                lesson.audience = this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '';
+                lesson.audience = audience;
+                lesson.audienceId = audienceKey.id;
+
                 lessons.push(lesson);
 
                 // Две подгруппы - создаём и пушим два отдельных урока
             } else {
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
-                normalizedTeacher = normalizeTeacher(teacher, true);
-                addNormalizedTeacherToMap(normalizedTeacher);
+                teacherKey = await this.setIdToTeacher(teacher);
+                audience = this.cellInfo(`${group.startCol}${row}`, 1, 0)?.value || '';
+                audienceKey = await this.setId(audience, 'audience');
 
                 const lesson1: Lesson = {
+                    teacher: teacher,
+                    teacherNormalized: teacherKey.normalizedValue,
+                    teacherId: teacherKey.id,
+
                     number: lesson.number,
                     group: lesson.group,
+                    groupId: groupKey.id,
                     name: subgroup1Lesson?.value || '',
-                    teacher: teacher,
-                    teacherNormalized: normalizedTeacher,
-                    teacherId: '',
-                    audience: this.cellInfo(`${group.startCol}${row}`, 1, 0)?.value || '',
+                    audience: audience,
+                    audienceId: audienceKey.id,
                     subgroup: 1,
                     day: lesson.day,
                     weekTitle: lesson.weekTitle,
@@ -233,48 +291,73 @@ const tableService = {
 
 
                 teacher = this.cellInfo(`${group.startCol}${row}`, 2, 1)?.value || '';
-                normalizedTeacher = normalizeTeacher(teacher, true);
-                addNormalizedTeacherToMap(normalizedTeacher);
+                teacherKey = await this.setIdToTeacher(teacher);
+                audience = this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '';
+                audienceKey = await this.setId(audience, 'audience');
 
                 const lesson2: Lesson = {
+                    teacher: teacher,
+                    teacherNormalized: teacherKey.normalizedValue,
+                    teacherId: teacherKey.id,
+
                     number: lesson.number,
                     group: lesson.group,
+                    groupId: groupKey.id,
                     name: subgroup2Lesson?.value || '',
-                    teacher: teacher,
-                    teacherNormalized: normalizedTeacher,
-                    teacherId: '',
-                    audience: this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '',
+                    audience: audience,
+                    audienceId: audienceKey.id,
                     subgroup: 2,
                     day: lesson.day,
                     weekTitle: lesson.weekTitle,
                 };
                 if (subgroup2Lesson?.value) lessons.push(lesson2);
             }
-        });
+        }
         return lessons;
     },
 
+    parseDate() {
+        if (!this.weekTitle) return { start: '', end: '' };
+
+        // Ищем все куски, похожие на дату (например: 23.01.2025, 2.6.25 и т.п.)
+        const matches = this.weekTitle.match(/\d{1,2}\.\d{1,2}\.\d{2,4}/g);
+
+        if (!matches || matches.length < 2) {
+            throw new Error(`Не удалось выделить даты из weekTitle: ${this.weekTitle}`);
+        }
+
+        const start = normalizeDate(matches[0]);
+        const end = normalizeDate(matches[1]);
+
+        return { start, end };
+    },
+
     async fullParse() {
+        this.teacherKeys = await keysService.findAllByType('teacher');
+        this.groupsKeys = await keysService.findAllByType('group');
+        this.audienceKeys = await keysService.findAllByType('audience');
+
         this.findGroups();
         this.findDays();
 
         const weekLessons: WeekLessons = {
             lessons: [],
             weekTitle: this.weekTitle,
+            startDate: this.parseDate().start,
+            endDate: this.parseDate().end,
         };
 
         const pairs = this.groups.flatMap(group =>
             this.days.map(day => ({ group, day })),
         );
         for (const { group, day } of pairs) {
-            weekLessons.lessons.push(...this.parseDayLessonsFromGroup(day, group));
+            const dayLessons = await this.parseDayLessonsFromGroup(day, group);
+            weekLessons.lessons.push(...dayLessons);
         }
-
-        // Добавляем id учителей
-        weekLessons.lessons = this.setIdsToTeachers(weekLessons.lessons);
 
         const result = await scheduleService.create(weekLessons);
         console.log(result);
+        cacheService.clear();
     },
 };
 
