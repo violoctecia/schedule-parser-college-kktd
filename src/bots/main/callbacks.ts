@@ -1,20 +1,23 @@
-import { Bot } from 'grammy';
-import { MyContext } from '@/src/types/bot.js';
+import { Bot, InlineKeyboard } from 'grammy';
+import { UserContext } from '@/src/types/bot.js';
 import { ScheduleType } from '@/src/types/schedule.js';
 import { showSelectTypeMenu } from '@/src/bots/main/menus/select-type.menu.js';
 import { sendSchedule } from '@/src/bots/main/utils/send-schedule.js';
 import { showListMenu } from '@/src/bots/main/menus/list.menu.js';
 
 const listMenuTexts = {
-    group: '👥 <b>Выберите группу</b> из предложенных вариантов\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот подскажет варианты',
-    teacher: '👨‍🏫 <b>Выберите преподавателя</b> из предложенных вариантов. Список для удобства отсортирован по алфавиту\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот подскажет варианты',
-    audience: 'Выберите аудиторию:',
-    name: 'Выберите предмет:',
+    group: '👥 <b>Выберите группу</b> из предложенных вариантов\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот попробует подсказать варианты',
+    teacher: '👨‍🏫 <b>Выберите преподавателя</b> из предложенных вариантов. Список для удобства отсортирован по алфавиту\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот попробует подсказать варианты',
+    audience: 'Выберите аудиторию из предложенных вариантов.\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот попробует подсказать варианты',
 };
 
-export function registerCallbacks(bot: Bot<MyContext>) {
+
+export function registerCallbacks(bot: Bot<UserContext>) {
+
     // Select flow
     bot.callbackQuery('select_flow_type', async (ctx) => {
+        ctx.session.isSelecting = false;
+
         await showSelectTypeMenu(ctx, true);
         await ctx.answerCallbackQuery();
     });
@@ -24,11 +27,16 @@ export function registerCallbacks(bot: Bot<MyContext>) {
         const data = ctx.callbackQuery.data;
         const [, type] = data.split('_');
 
+        ctx.session.isSelecting = true;
+        ctx.session.currentSchedule = {
+            type: type as ScheduleType,
+        };
+
         await showListMenu(ctx, 0, type as ScheduleType, listMenuTexts[type as ScheduleType]);
         await ctx.answerCallbackQuery();
     });
 
-    // Pick value of type
+    // Pick value in list
     bot.callbackQuery(/select_.+/, async (ctx) => {
         const data = ctx.callbackQuery.data;
         const [, type, value] = data.split('_');
@@ -37,7 +45,8 @@ export function registerCallbacks(bot: Bot<MyContext>) {
         await ctx.answerCallbackQuery();
     });
 
-    bot.callbackQuery(/schedule.+/, async (ctx) => {
+    // Change schedule position
+    bot.callbackQuery(/schedule_+/, async (ctx) => {
         const data = ctx.callbackQuery.data;
         const [, position, type, value] = data.split('_');
 
@@ -45,38 +54,34 @@ export function registerCallbacks(bot: Bot<MyContext>) {
         await ctx.answerCallbackQuery();
     });
 
-    // Manual search
-    bot.callbackQuery(/manual_.+/, async (ctx) => {
-        const data = ctx.callbackQuery.data;
-        const [, type] = data.split('_');
+    // Remember selection
+    bot.callbackQuery('remember', async (ctx) => {
+        if (!ctx.session.currentSchedule) return;
 
-        const msg = {
-            group: {
-                text: 'группу <b>(например: 09.02.07-1)</b>',
-                placeholder: '09.02.07-',
-            },
-            teacher: {
-                text: 'преподавателя <b>(например: Харитонова)</b>',
-                placeholder: 'Харитонова..',
-            },
-            audience: {
-                text: 'аудиторию <b>(например: 306)</b>',
-                placeholder: '311?',
-            },
-        };
+        const currentSchedule = ctx.session.currentSchedule;
+        if (!currentSchedule.normalizedValue || !currentSchedule.key) return;
 
-        await ctx.deleteMessage();
-        await ctx.reply(`В ответе на это сообщение попробуйте вручную ввести ${msg[type as ScheduleType].text}, в случае неправильного ввода <b>бот подскажет</b> варианты, которые возможно вы имели ввиду\n\n/menu - вернуться в главное меню`, {
-            reply_markup: {
-                force_reply: true,
-                input_field_placeholder: msg[type as ScheduleType].placeholder,
-            },
+        const rememberedSchedule = ctx.session.rememberedSchedule;
+
+        const text = rememberedSchedule ?
+            `🗝️ Ваш выбор уведомлений был изменен с ${rememberedSchedule.normalizedValue} на ${currentSchedule.normalizedValue}` :
+            `🗝️ Теперь вы будете получать уведомление о новых расписаниях сразу для ${currentSchedule.normalizedValue}`;
+
+        ctx.session.rememberedSchedule = {
+            type: currentSchedule.type,
+            normalizedValue: currentSchedule.normalizedValue,
+            key: currentSchedule.key
+        }
+
+        await ctx.editMessageText(text, {
+            reply_markup: new InlineKeyboard()
+                .text(`🏠 Назад`, `select_flow_type`),
         });
         await ctx.answerCallbackQuery();
     });
 
     // Navigation list
-    bot.callbackQuery(/page_(group|teacher|audience|subject)_\d+/, async (ctx) => {
+    bot.callbackQuery(/page_(group|teacher|audience)_\d+/, async (ctx) => {
         const data = ctx.callbackQuery.data;
         const regex = /^page_(group|teacher|audience)_(.+)$/;
         const match = data.match(regex);

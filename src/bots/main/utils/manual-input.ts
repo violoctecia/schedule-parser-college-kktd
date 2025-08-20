@@ -1,4 +1,4 @@
-import { MyContext } from '@/src/types/bot.js';
+import { UserContext } from '@/src/types/bot.js';
 import { ScheduleType } from '@/src/types/schedule.js';
 import { cacheService } from '@/src/services/cache.service.js';
 import { showListMenu } from '@/src/bots/main/menus/list.menu.js';
@@ -7,14 +7,16 @@ import { getPaginatedKeyboard } from '@/src/bots/main/utils/keyboards.js';
 import { sendSchedule } from '@/src/bots/main/utils/send-schedule.js';
 import { normalizeTeacher } from '@/src/utils/normalize-teacher.js';
 
-export async function handleManualInput(ctx: MyContext, type: ScheduleType, value: string) {
+export async function handleManualInput(ctx: UserContext, type: ScheduleType, value: string) {
     const list = await cacheService.getList(type);
 
     const listValues = list.map(o => o.normalizedValue);
     const listIds = list.map(o => o.id);
 
     if (listValues.includes(value)) {
-        await sendSchedule(ctx, type as ScheduleType, value);
+        const id = list.find(o => o.normalizedValue === value)?.id;
+        if (!id) return;
+        await sendSchedule(ctx, type, id, 'current', false);
     } else {
         if (type === 'teacher') {
             value = normalizeTeacher(value);
@@ -44,7 +46,7 @@ export async function handleManualInput(ctx: MyContext, type: ScheduleType, valu
             );
 
             await ctx.reply(
-                `👀 Не удалось найти ${texts[type]} в текущей таблице расписания, <b>но есть ${closeMatches.length > 1 ? 'пару похожих вариантов:' : '1️⃣ один похожий вариант'}</b>\n\n✏️ Если ни один из вариантов не подходит, можете попробовать ввести вручную еще раз.`,
+                `👀 Возможно вы имели ввиду <b>${closeMatches.length > 1 ? 'что-нибудь из этих вариантов' : 'этот вариант'}?</b>\n\n✏️ Если это не то, что вы искали можете попробовать ввести вручную еще раз или вернуться к готовыи спискам.`,
                 { reply_markup: keyboard },
             );
         } else {

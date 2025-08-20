@@ -6,6 +6,7 @@ import { normalizeDate } from '@/src/utils/normalize-date.js';
 import { Key } from '@/src/types/keys.js';
 import { keysService } from '@/src/database/keys/keys.service.js';
 import { cacheService } from '@/src/services/cache.service.js';
+import crypto from 'crypto';
 
 const startPoints = {
     groups: 'F10',
@@ -37,7 +38,7 @@ const tableService = {
         } else if (buffer) {
             workbook = XLSX.read(buffer, { type: 'buffer' });
         } else {
-            return 'Не передан filePath или buffer'
+            return 'Не передан filePath или buffer';
         }
 
         const sheetName = workbook.SheetNames[0];
@@ -149,7 +150,11 @@ const tableService = {
 
         const newKey: Key = {
             normalizedValue: str,
-            id: str.toLowerCase().replace(/[\s.-]/g, ''),
+            id: crypto
+                .createHash('md5')
+                .update(str)
+                .digest('hex')
+                .slice(0, 16),
         };
 
         const keysArray =
@@ -324,20 +329,17 @@ const tableService = {
         return lessons;
     },
 
-    parseDate() {
-        if (!this.weekTitle) return { start: '', end: '' };
-
-        // Ищем все куски, похожие на дату (например: 23.01.2025, 2.6.25 и т.п.)
+    parseDate(): {startDate: Date, endDate: Date} {
         const matches = this.weekTitle.match(/\d{1,2}\.\d{1,2}\.\d{2,4}/g);
 
         if (!matches || matches.length < 2) {
             throw new Error(`Не удалось выделить даты из weekTitle: ${this.weekTitle}`);
         }
 
-        const start = normalizeDate(matches[0]);
-        const end = normalizeDate(matches[1]);
+        const startDate = normalizeDate(matches[0]);
+        const endDate = normalizeDate(matches[1]);
 
-        return { start, end };
+        return { startDate, endDate };
     },
 
     async fullParse() {
@@ -348,22 +350,26 @@ const tableService = {
         this.findGroups();
         this.findDays();
 
-        const weekLessons: WeekLessons = {
-            lessons: [],
-            weekTitle: this.weekTitle,
-            weekTitleId: this.weekTitle.toLowerCase().replace(/[\s.-]/g, ''),
-            startDate: this.parseDate().start,
-            endDate: this.parseDate().end,
-            isCurrent: false,
-        };
+        const lessons = [];
 
         const pairs = this.groups.flatMap(group =>
             this.days.map(day => ({ group, day })),
         );
         for (const { group, day } of pairs) {
             const dayLessons = await this.parseDayLessonsFromGroup(day, group);
-            weekLessons.lessons.push(...dayLessons);
+            lessons.push(...dayLessons);
         }
+
+        const {startDate, endDate} = this.parseDate();
+
+        const weekLessons: WeekLessons = {
+            startDate,
+            endDate,
+            weekTitle: this.weekTitle,
+            weekTitleId: this.weekTitle.toLowerCase().replace(/[\s.-]/g, ''),
+            isCurrent: false,
+            lessons,
+        };
 
         const result = await scheduleService.create(weekLessons);
         console.log(result);

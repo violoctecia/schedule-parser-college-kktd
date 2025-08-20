@@ -4,8 +4,13 @@ import { Lesson, Schedule, ScheduleType, DayLessons } from '@/src/types/schedule
 import { formatText } from '@/src/utils/format-text.js';
 import { getTimeForLesson } from '@/src/utils/lesson-time.js';
 
+
+
 const cfg = {
-    backgroundColor: '#dcdaef',
+    backgroundColorVars: ['#dedede', '#dcdaef'],
+    get backgroundColor() {
+        return this.backgroundColorVars[Math.floor(Math.random() * this.backgroundColorVars.length)];
+    },
     dayBackgroundColor: '#fffffd',
     textColor: '#050505',
     secondTextColor: 'rgba(5, 5, 5, 0.6)',

@@ -1,17 +1,11 @@
-import { Bot, InlineKeyboard, session } from 'grammy';
-import { AdminContext, AdminSessionData } from '@/src/types/bot.js';
+import { Bot, InlineKeyboard } from 'grammy';
 import tableService from '@/src/services/table.service.js';
 import { scheduleService } from '@/src/database/schedule/schedule.service.js';
 import { cfg } from '@/src/config.js';
 import { showScheduleList } from '@/src/bots/admin/schedule-titles.menu.js';
 
-export const bot = new Bot<AdminContext>(cfg.botAdminToken);
+export const bot = new Bot(cfg.botAdminToken);
 
-function initial(): AdminSessionData {
-    return { step: '' };
-}
-
-bot.use(session({ initial }));
 bot.api.config.use((prev, method, payload) =>
     prev(method, {
         ...payload,
@@ -23,7 +17,7 @@ bot.api.config.use((prev, method, payload) =>
 const texts = {
     'delete': 'Выберите расписание из списка, которое хотите удалить\n\n ✅ - текущее активное расписание',
     'active': 'Выберите расписание из списка, которое хотите сделать активным (активное расписание будет выдаваться пользователям по умолчанию в основном боте)\n\n ✅ - текущее активное расписание',
-}
+};
 
 const mainMenuKeyboard = {
     reply_markup: new InlineKeyboard()
@@ -40,20 +34,17 @@ bot.command('start', async (ctx) => {
     const chatId = ctx.chat.id;
     console.log('ADMIN BOT:', 'chatId:', chatId, 'username:', ctx.from?.username);
 
-    if (cfg.adminChatIds.includes(chatId.toString())) {
+    if (!cfg.adminChatIds.includes(chatId.toString())) {
         await ctx.reply('У вас нет прав для выполнения этой операции.');
         return;
     }
 
-    ctx.session.step = 'menu';
     await ctx.reply(
         ` 🧑‍💻 Добро пожаловать администратор ${ctx.from?.username}`, mainMenuKeyboard,
     );
 });
 
 bot.on('message:document', async (ctx) => {
-    if (ctx.session.step !== 'new') return;
-
     const doc = ctx.msg.document;
     if (!doc || !doc.file_name) return;
 
@@ -76,20 +67,16 @@ bot.on('message:document', async (ctx) => {
     } catch (err) {
         console.error('Ошибка при загрузке файла:', err);
         await ctx.reply(`❌ Не удалось загрузить файл: ${err}.`, mainMenuKeyboard);
-    } finally {
-        ctx.session.step = 'menu';
     }
 });
 
 bot.callbackQuery('menu', async (ctx) => {
-    ctx.session.step = 'menu';
     await ctx.editMessageText(
         ` 🧑‍💻 Добро пожаловать администратор ${ctx.from?.username}`, mainMenuKeyboard);
     await ctx.answerCallbackQuery();
 });
 
 bot.callbackQuery('new', async (ctx) => {
-    ctx.session.step = 'new';
     await ctx.editMessageText('Загрузите или перешлите в этот чат новую таблицу с расписанием в формате .xlsx', {
         reply_markup: new InlineKeyboard().text('Назад', 'menu'),
     });
@@ -143,6 +130,21 @@ bot.callbackQuery(/page_(active|delete)_\d+/, async (ctx) => {
 bot.catch((err) => {
     console.error('‼️ Прилетела ошибка в админке:', err);
 });
+
+export async function notifyAdmins(message: string) {
+    console.log('Попытка отправить уведомление админам:', message);
+    console.log('Список админов:', cfg.adminChatIds);
+
+    for (const adminId of cfg.adminChatIds) {
+        try {
+            console.log(`📤 Отправка админу: ${adminId}`);
+            const res = await bot.api.sendMessage(adminId, message);
+            console.log('✅ Успешно отправлено:', res.chat.id);
+        } catch (err) {
+            console.error(`❌ Не удалось отправить сообщение админу ${adminId}:`, err);
+        }
+    }
+}
 
 export function startAdminBot() {
     bot.start();

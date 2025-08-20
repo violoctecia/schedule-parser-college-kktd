@@ -31,10 +31,7 @@ export const scheduleService = {
             }).sort({ startDate: 1 });
 
             if (!nextWeek) {
-                console.log('Next week no:',);
                 return '❌ Next week not found';
-            } else {
-                console.log('Next week yes:',);
             }
 
             weekSchedule = nextWeek;
@@ -70,7 +67,33 @@ export const scheduleService = {
             grouped[day] = sortedByNumber;
         });
 
+        if (param !== 'groupId') {
+            const dayOrderMap: Record<string, number> = {
+                'понедельник': 1,
+                'вторник': 2,
+                'среда': 3,
+                'четверг': 4,
+                'пятница': 5,
+                'суббота': 6,
+                'воскресенье': 7,
+            };
+
+            function getDayOrderKey(dayWithDate: string): number {
+                const dayName = dayWithDate.split(' ')[0].toLowerCase();
+                return dayOrderMap[dayName] || 99;
+            }
+
+            const ordered: Schedule = {};
+            Object.keys(grouped)
+                .sort((a, b) => getDayOrderKey(a) - getDayOrderKey(b))
+                .forEach(day => {
+                    ordered[day] = grouped[day];
+                });
+            return ordered;
+        }
+
         return grouped;
+
     },
 
     async setCurrent(weekTitleId: string) {
@@ -90,7 +113,7 @@ export const scheduleService = {
         }
         doc.isCurrent = true;
         await doc.save();
-        cacheService.clear()
+        cacheService.clear();
     },
 
     async getAllScheduleTitles() {

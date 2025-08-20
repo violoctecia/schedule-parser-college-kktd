@@ -1,15 +1,14 @@
-import { Bot, InlineKeyboard, session } from 'grammy';
-import { MyContext, SessionData } from '@/src/types/bot.js';
-import { ScheduleType } from '@/src/types/schedule.js';
+import { Bot, GrammyError, HttpError, InlineKeyboard, session } from 'grammy';
+import { UserContext, UserSessionData } from '@/src/types/bot.js';
 import { cfg } from '@/src/config.js';
 import { registerCallbacks } from '@/src/bots/main/callbacks.js';
 import { handleManualInput } from '@/src/bots/main/utils/manual-input.js';
-import { showSelectTypeMenu } from '@/src/bots/main/menus/select-type.menu.js';
+import { notifyAdmins } from '@/src/bots/admin/index.js';
 
-export const bot = new Bot<MyContext>(cfg.botToken);
+export const bot = new Bot<UserContext>(cfg.botToken);
 
-function initial(): SessionData {
-    return {};
+function initial(): UserSessionData {
+    return { isSelecting: false, rememberedSchedule: null, currentSchedule: null };
 }
 
 bot.use(session({ initial }));
@@ -23,40 +22,74 @@ bot.api.config.use((prev, method, payload) =>
 );
 
 bot.command('start', async (ctx) => {
-    await ctx.reply(
-        '👋👋 Привет! \n\nБот обновлен и работает в штатном режиме. Всего 2 шага до вашего расписания 👇', {
-            reply_markup: new InlineKeyboard().text('Продолжить ▶️', 'select_flow_type'),
-        },
-    );
-});
 
-bot.command('menu', async (ctx) => {
-    await showSelectTypeMenu(ctx);
+    if (ctx.chat.type === 'private') {
+        await ctx.reply(
+            '👋👋 Привет! \n\nБот обновлен и работает в штатном режиме. \nТакже вы можете добавить его в свою беседу и автоматически получать новые расписания. \n\nВсего 2 шага до вашего расписания 👇', {
+                reply_markup: new InlineKeyboard().text('Продолжить ▶️', 'select_flow_type'),
+            },
+        );
+    } else {
+        await ctx.reply(
+            '👋 Всем привет! \nПеред тем как бот начнет присылать новые расписания в этот чат, необходимо его настроить',
+            {
+                reply_markup: new InlineKeyboard().text('Начать ▶️', 'select_flow_type'),
+            },
+        );
+    }
+
 });
 
 bot.on('message:text', async (ctx) => {
-    const replyTo = ctx.message.reply_to_message;
-    if (!replyTo) return;
+    if (ctx.session.isSelecting && ctx.session.currentSchedule?.type) {
+        const userValue = ctx.message.text.trim().toString();
+        await handleManualInput(ctx, ctx.session.currentSchedule.type, userValue);
+    }
+});
 
-    const match = replyTo.text?.startsWith('В ответе на это сообщение');
-    if (!match) return;
+bot.on('my_chat_member', async (ctx) => {
+    const status = ctx.myChatMember.new_chat_member.status;
+    const chatId = ctx.chat.id;
 
-    const userValue = ctx.message.text.trim();
-    let type: ScheduleType | null = null;
+    if (status === 'member' || status === 'administrator') {
+       try {
+           await ctx.api.sendMessage(
+               chatId,
+               '👋 Всем привет! /nПеред тем как бот начнет присылать новые расписания в этот чат, необходимо его настроить',
+               {
+                   reply_markup: new InlineKeyboard().text('Начать ▶️', 'select_flow_type'),
+               },
+           );
+       } catch (e) {
 
-    if (replyTo.text?.includes('группу')) {
-        type = 'group';
-    } else if (replyTo.text?.includes('преподавателя')) {
-        type = 'teacher';
-    } else if (replyTo.text?.includes('аудиторию')) {
-        type = 'audience';
+       }
     }
 
-    await handleManualInput(ctx, type as ScheduleType, userValue);
+    if (status === 'kicked' || status === 'left') {
+        console.log(`Бота удалили из чата ${chatId}`);
+    }
 });
 
 bot.catch((err) => {
-    console.error('‼️ Прилетела ошибка:', err);
+    const ctx = err.ctx;
+    console.error(`‼️ Error while handling update ${ctx.update.update_id}:`);
+    const e = err.error;
+    console.log(e);
+    if (e instanceof GrammyError) {
+        console.error('‼️ Error in request:', e.description);
+    } else if (e instanceof HttpError) {
+        console.error('‼️ Could not contact Telegram:', e);
+    } else {
+        console.error('‼️ Unknown error:', e);
+    }
+
+    if (ctx.chatId) {
+        ctx.api.sendMessage(ctx.chatId, 'Кажется что-то пошло не так... Нам уже известна эта ошибка и в ближайшее время она будет исправлена, а пока можете начать заново.', {
+            reply_markup: new InlineKeyboard().text('Продолжить ▶️', 'select_flow_type'),
+        });
+    }
+
+    notifyAdmins('❌ Ошибка в основном боте:\n' + JSON.stringify(e));
 });
 
 registerCallbacks(bot);

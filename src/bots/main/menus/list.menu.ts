@@ -1,11 +1,11 @@
-import { MyContext } from '@/src/types/bot.js';
+import { UserContext } from '@/src/types/bot.js';
 import { getPaginatedKeyboard } from '@/src/bots/main/utils/keyboards.js';
 import { cacheService } from '@/src/services/cache.service.js';
 import { ScheduleType } from '@/src/types/schedule.js';
 import { Key } from '@/src/types/keys.js';
 
 export async function showListMenu(
-    ctx: MyContext,
+    ctx: UserContext,
     page = 0,
     type: ScheduleType,
     text: string,
@@ -21,16 +21,13 @@ export async function showListMenu(
         const aNum = parseInt(aVal, 10);
         const bNum = parseInt(bVal, 10);
 
-        // если оба начинаются с числа → сравниваем как числа
         if (!isNaN(aNum) && !isNaN(bNum)) {
             return aNum - bNum;
         }
 
-        // если один число, другой текст → число выше
         if (!isNaN(aNum) && isNaN(bNum)) return -1;
         if (isNaN(aNum) && !isNaN(bNum)) return 1;
 
-        // оба строки → сравнение по алфавиту (localeCompare поддерживает кириллицу)
         return aVal.localeCompare(bVal, 'ru');
     });
 
