@@ -1,8 +1,8 @@
-import { InlineKeyboard, InputFile } from 'grammy';
+import { InputFile } from 'grammy';
 import { ScheduleType } from '@/src/types/schedule.js';
 import { UserContext } from '@/src/types/bot.js';
 import { cacheService } from '@/src/services/cache.service.js';
-import { botChatsService } from '@/src/database/bot/bot-chats.service.js';
+import { scheduleKb } from '@/src/bots/main/utils/schedule.kb.js';
 
 const sendScheduleText = {
     current: {
@@ -19,7 +19,6 @@ const sendScheduleText = {
 
 
 export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: string, position: 'current' | 'next' = 'current', isCallback: boolean = true) {
-
 
     let sent;
     if (isCallback) {
@@ -38,39 +37,7 @@ export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: 
         normalizedValue: normalizedValue,
     };
 
-    let kbRememberItem;
-    if (ctx.session.rememberedSchedule) {
-        kbRememberItem = new InlineKeyboard().text(
-            `🔕 Забыть выбор`,
-            `forgot`,
-        );
-    } else {
-        kbRememberItem = new InlineKeyboard().text(
-            `🔔 Запомнить выбор`,
-            `remember`,
-        );
-    }
-    const kb = new InlineKeyboard().text('🏠 Поменять выбор', 'select_flow_type');
-
-    let keyboardItem: InlineKeyboard;
-    if (position === 'current') {
-        keyboardItem = new InlineKeyboard().text(
-            `Следующее расписание ⏭️`,
-            `schedule_next_${type}_${value}`,
-        );
-    } else {
-        keyboardItem = new InlineKeyboard().text(
-            `⏮️ Текущее расписание `,
-            `schedule_current_${type}_${value}`,
-        );
-    }
-
-    const finalKb = new InlineKeyboard([
-        ...keyboardItem.inline_keyboard,
-        ...kbRememberItem.inline_keyboard,
-        ...kb.inline_keyboard,
-    ]);
-
+    const finalKb = scheduleKb(ctx, position, type, value);
 
     const deleteMessage = async () => {
         if (isCallback) {

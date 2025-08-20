@@ -1,5 +1,5 @@
 import { UserContext } from '@/src/types/bot.js';
-import { getPaginatedKeyboard } from '@/src/bots/main/utils/keyboards.js';
+import { navKb } from '@/src/bots/main/utils/nav.kb.js';
 import { cacheService } from '@/src/services/cache.service.js';
 import { ScheduleType } from '@/src/types/schedule.js';
 import { Key } from '@/src/types/keys.js';
@@ -31,7 +31,7 @@ export async function showListMenu(
         return aVal.localeCompare(bVal, 'ru');
     });
 
-    const keyboard = getPaginatedKeyboard(
+    const keyboard = navKb(
         type,
         sorted,
         page,

@@ -35,18 +35,17 @@ export const botChatsService = {
         );
     },
 
-
     async setSchedule(ctx: UserContext) {
-        if (!ctx.session.type || !ctx.session.value || !ctx.session.valueId) return;
+        if (!ctx.session.rememberedSchedule) return;
 
         return BotChatsModel.updateOne(
             { chatId: ctx.chatId },
             {
                 $set: {
                     schedule: {
-                        type: ctx.session.type,
-                        value: ctx.session.value,
-                        valueId: ctx.session.valueId,
+                        type: ctx.session.rememberedSchedule.type,
+                        value: ctx.session.rememberedSchedule.normalizedValue,
+                        valueId: ctx.session.rememberedSchedule.key,
                     },
                 },
             },

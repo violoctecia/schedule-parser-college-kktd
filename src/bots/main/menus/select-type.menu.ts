@@ -1,7 +1,6 @@
 import { InlineKeyboard } from 'grammy';
 import { UserContext } from '@/src/types/bot.js';
 
-
 export async function showSelectTypeMenu(ctx: UserContext, isEdit: boolean = false, text?: string) {
 
     const kb = {
@@ -15,7 +14,7 @@ export async function showSelectTypeMenu(ctx: UserContext, isEdit: boolean = fal
 
     if (ctx.session.rememberedSchedule) {
         kb.reply_markup.inline_keyboard.push([{
-            text: `🗝️ ${ctx.session.rememberedSchedule.normalizedValue}`,
+            text: `⭐️ ${ctx.session.rememberedSchedule.normalizedValue}`,
             callback_data: `schedule_current_${ctx.session.rememberedSchedule.type}_${ctx.session.rememberedSchedule.key}`
         }]);
     }

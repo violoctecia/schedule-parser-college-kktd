@@ -4,6 +4,7 @@ import { ScheduleType } from '@/src/types/schedule.js';
 import { showSelectTypeMenu } from '@/src/bots/main/menus/select-type.menu.js';
 import { sendSchedule } from '@/src/bots/main/utils/send-schedule.js';
 import { showListMenu } from '@/src/bots/main/menus/list.menu.js';
+import { scheduleKb } from '@/src/bots/main/utils/schedule.kb.js';
 
 const listMenuTexts = {
     group: '👥 <b>Выберите группу</b> из предложенных вариантов\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот попробует подсказать варианты',
@@ -11,18 +12,16 @@ const listMenuTexts = {
     audience: 'Выберите аудиторию из предложенных вариантов.\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот попробует подсказать варианты',
 };
 
-
 export function registerCallbacks(bot: Bot<UserContext>) {
 
-    // Select flow
+    // Menu Select Type
     bot.callbackQuery('select_flow_type', async (ctx) => {
         ctx.session.isSelecting = false;
-
         await showSelectTypeMenu(ctx, true);
         await ctx.answerCallbackQuery();
     });
 
-    // Show list
+    // Menu List Of Type
     bot.callbackQuery(/list.+/, async (ctx) => {
         const data = ctx.callbackQuery.data;
         const [, type] = data.split('_');
@@ -36,7 +35,7 @@ export function registerCallbacks(bot: Bot<UserContext>) {
         await ctx.answerCallbackQuery();
     });
 
-    // Pick value in list
+    // Show Schedule
     bot.callbackQuery(/select_.+/, async (ctx) => {
         const data = ctx.callbackQuery.data;
         const [, type, value] = data.split('_');
@@ -45,7 +44,7 @@ export function registerCallbacks(bot: Bot<UserContext>) {
         await ctx.answerCallbackQuery();
     });
 
-    // Change schedule position
+    // Change Schedule Position
     bot.callbackQuery(/schedule_+/, async (ctx) => {
         const data = ctx.callbackQuery.data;
         const [, position, type, value] = data.split('_');
@@ -54,18 +53,15 @@ export function registerCallbacks(bot: Bot<UserContext>) {
         await ctx.answerCallbackQuery();
     });
 
-    // Remember selection
-    bot.callbackQuery('remember', async (ctx) => {
+    // Remember Selection
+    bot.callbackQuery(/remember_+/, async (ctx) => {
         if (!ctx.session.currentSchedule) return;
 
         const currentSchedule = ctx.session.currentSchedule;
         if (!currentSchedule.normalizedValue || !currentSchedule.key) return;
 
-        const rememberedSchedule = ctx.session.rememberedSchedule;
-
-        const text = rememberedSchedule ?
-            `🗝️ Ваш выбор уведомлений был изменен с ${rememberedSchedule.normalizedValue} на ${currentSchedule.normalizedValue}` :
-            `🗝️ Теперь вы будете получать уведомление о новых расписаниях сразу для ${currentSchedule.normalizedValue}`;
+        const data = ctx.callbackQuery.data;
+        const [, position] = data.split('_');
 
         ctx.session.rememberedSchedule = {
             type: currentSchedule.type,
@@ -73,14 +69,14 @@ export function registerCallbacks(bot: Bot<UserContext>) {
             key: currentSchedule.key
         }
 
-        await ctx.editMessageText(text, {
-            reply_markup: new InlineKeyboard()
-                .text(`🏠 Назад`, `select_flow_type`),
-        });
+        await ctx.editMessageReplyMarkup({
+            reply_markup: scheduleKb(ctx, position as 'current' | 'next', currentSchedule.type, currentSchedule.key)
+        })
+
         await ctx.answerCallbackQuery();
     });
 
-    // Navigation list
+    // Navigation List
     bot.callbackQuery(/page_(group|teacher|audience)_\d+/, async (ctx) => {
         const data = ctx.callbackQuery.data;
         const regex = /^page_(group|teacher|audience)_(.+)$/;

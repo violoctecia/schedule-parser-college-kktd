@@ -1,5 +1,9 @@
 # College Schedule Parser & Viewer
 
+### Start
+1. Run `pnpm install`
+2. Run `pnpm dev`
+
 ### Configuration
 - Copy and setup `.env` file from `.env.example`
 - Configure lesson times in 'times' object in `src/utils/lesson-time.ts`

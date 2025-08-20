@@ -1,9 +1,9 @@
-import { MyContext } from '@/src/types/bot.js';
 import { getPaginatedKeyboard } from '@/src/bots/admin/keyboard.js';
 import { scheduleService } from '@/src/database/schedule/schedule.service.js';
+import { Context } from 'grammy';
 
 export async function showScheduleList(
-    ctx: MyContext,
+    ctx: Context,
     page = 0,
     type: string,
     text: string

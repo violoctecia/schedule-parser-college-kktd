@@ -1,7 +1,7 @@
 import { InlineKeyboard } from 'grammy';
 import { ScheduleType } from '@/src/types/schedule.js';
 
-export function getPaginatedKeyboard<T>(
+export function navKb<T>(
     type: ScheduleType,
     items: T[],
     page: number,

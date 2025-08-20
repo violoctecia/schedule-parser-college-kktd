@@ -3,7 +3,7 @@ import { ScheduleType } from '@/src/types/schedule.js';
 import { cacheService } from '@/src/services/cache.service.js';
 import { showListMenu } from '@/src/bots/main/menus/list.menu.js';
 import { findClosest } from '@/src/utils/find-closest.js';
-import { getPaginatedKeyboard } from '@/src/bots/main/utils/keyboards.js';
+import { navKb } from '@/src/bots/main/utils/nav.kb.js';
 import { sendSchedule } from '@/src/bots/main/utils/send-schedule.js';
 import { normalizeTeacher } from '@/src/utils/normalize-teacher.js';
 
@@ -36,7 +36,7 @@ export async function handleManualInput(ctx: UserContext, type: ScheduleType, va
         if (closeMatches?.length) {
             const filteredList = list.filter(o => closeMatches.includes(o.id));
 
-            let keyboard = getPaginatedKeyboard(
+            let keyboard = navKb(
                 type,
                 filteredList,
                 0,
