@@ -6,8 +6,8 @@ interface IBotChat extends BotChat, Document {}
 const selectedScheduleSchema = new Schema(
     {
         type: { type: String, required: true },
-        value: { type: String, required: true },
-        valueId: { type: String, required: true },
+        normalizedValue: { type: String, required: true },
+        key: { type: String, required: true },
     },
     { _id: false }
 );

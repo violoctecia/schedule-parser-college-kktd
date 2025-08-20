@@ -3,6 +3,7 @@ import tableService from '@/src/services/table.service.js';
 import { scheduleService } from '@/src/database/schedule/schedule.service.js';
 import { cfg } from '@/src/config.js';
 import { showScheduleList } from '@/src/bots/admin/schedule-titles.menu.js';
+import { sendNextSchedule } from '@/src/bots/main/utils/notification.js';
 
 export const bot = new Bot(cfg.botAdminToken);
 
@@ -81,6 +82,13 @@ bot.callbackQuery('new', async (ctx) => {
         reply_markup: new InlineKeyboard().text('Назад', 'menu'),
     });
     await ctx.answerCallbackQuery();
+});
+
+bot.callbackQuery('notification', async (ctx) => {
+    await ctx.editMessageText('Отправка уведомлений о следующем расписании, пожалуйста, подождите...');
+    const stats = await sendNextSchedule();
+    await ctx.reply(`${JSON.stringify(stats)}`, mainMenuKeyboard);
+
 });
 
 bot.callbackQuery('active', async (ctx) => {

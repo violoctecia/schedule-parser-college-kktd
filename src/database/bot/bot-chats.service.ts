@@ -20,7 +20,7 @@ export const botChatsService = {
             chat.chatTitle = ctx.chat.title;
         }
 
-        return BotChatsModel.findOneAndUpdate(
+        const chatFromDb = await BotChatsModel.findOneAndUpdate(
             { chatId: chat.chatId },
             {
                 $set: {
@@ -33,65 +33,37 @@ export const botChatsService = {
             },
             { upsert: true, new: true },
         );
+
+        if (chatFromDb.schedule) {
+            ctx.session.rememberedSchedule = {
+                type: chatFromDb.schedule.type,
+                normalizedValue: chatFromDb.schedule.normalizedValue,
+                key: chatFromDb.schedule.key,
+            };
+        }
+
+        return chatFromDb;
     },
 
     async setSchedule(ctx: UserContext) {
-        if (!ctx.session.rememberedSchedule) return;
-
         return BotChatsModel.updateOne(
             { chatId: ctx.chatId },
             {
                 $set: {
-                    schedule: {
-                        type: ctx.session.rememberedSchedule.type,
-                        value: ctx.session.rememberedSchedule.normalizedValue,
-                        valueId: ctx.session.rememberedSchedule.key,
-                    },
+                    schedule: ctx.session.rememberedSchedule
+                        ? {
+                            type: ctx.session.rememberedSchedule.type,
+                            normalizedValue: ctx.session.rememberedSchedule.normalizedValue,
+                            key: ctx.session.rememberedSchedule.key,
+                        }
+                        : null,
                 },
             },
             { upsert: true },
         );
-
     },
 
-    // async sync(ctx: UserContext) {
-    //     if (!ctx.chatId) return;
-    //
-    //     const user: BotUser = {
-    //         chatId: ctx.chatId,
-    //         firstName: ctx.from?.first_name || '',
-    //         lastName: ctx.from?.last_name || '',
-    //         username: ctx.from?.username || '',
-    //         selected: null,
-    //     };
-    //
-    //     const existing = await BotChatsModel.findOne({ chatId: user.chatId });
-    //
-    //     if (existing) {
-    //         existing.firstName = user.firstName;
-    //         existing.lastName = user.lastName;
-    //         existing.username = user.username;
-    //         await existing.save();
-    //         return existing;
-    //     }
-    //
-    //     const newUser = new BotChatsModel(user);
-    //     await newUser.save();
-    //     return newUser;
-    // },
-    //
-    // async setSelected(ctx: UserContext, type: ScheduleType, key: Key | null) {
-    //     const existing = await BotChatsModel.findOne({ chatId: ctx.chatId });
-    //     if (!existing) return;
-    //
-    //     if (!key) {
-    //         existing.selected = null;
-    //         await existing.save();
-    //         return;
-    //     }
-    //
-    //     existing.selected = { type, key };
-    //     await existing.save();
-    //     return;
-    // },
+    async getAll(): Promise<BotChat[]> {
+        return BotChatsModel.find().lean();
+    }
 };

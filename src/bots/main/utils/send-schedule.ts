@@ -2,7 +2,9 @@ import { InputFile } from 'grammy';
 import { ScheduleType } from '@/src/types/schedule.js';
 import { UserContext } from '@/src/types/bot.js';
 import { cacheService } from '@/src/services/cache.service.js';
-import { scheduleKb } from '@/src/bots/main/utils/schedule.kb.js';
+import { scheduleKb } from '@/src/bots/main/keyboards/schedule.kb.js';
+import { botChatsService } from '@/src/database/bot/bot-chats.service.js';
+
 
 const sendScheduleText = {
     current: {
@@ -21,6 +23,7 @@ const sendScheduleText = {
 export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: string, position: 'current' | 'next' = 'current', isCallback: boolean = true) {
 
     let sent;
+
     if (isCallback) {
         await ctx.editMessageText('Пару секунд, готовим расписание..');
     } else {
@@ -37,6 +40,16 @@ export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: 
         normalizedValue: normalizedValue,
     };
 
+    const isGroupChat = ctx.chat?.type !== 'private';
+    if (isGroupChat) {
+        ctx.session.rememberedSchedule = {
+            type: type,
+            key: value,
+            normalizedValue: normalizedValue
+        };
+        await botChatsService.setSchedule(ctx);
+    }
+
     const finalKb = scheduleKb(ctx, position, type, value);
 
     const deleteMessage = async () => {
@@ -47,16 +60,7 @@ export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: 
         }
     };
 
-    const images = await cacheService.getImage(type, value, position);
 
-    if (!images) {
-        await deleteMessage();
-        await ctx.reply(`❌ ${sendScheduleText[position][type]} <b>${normalizedValue}</b> не найдено`,
-            {
-                reply_markup: finalKb,
-            });
-        return;
-    }
 
     if (isCallback) {
         await ctx.editMessageText('Еще немного...');
@@ -64,6 +68,15 @@ export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: 
         await ctx.api.editMessageText(sent!.chat.id, sent!.message_id, 'Еще немного...');
     }
 
+    const images = await cacheService.getImage(type, value, position);
+
+    if (!images) {
+        await deleteMessage();
+        let text = `❌ ${sendScheduleText[position][type]} <b>${normalizedValue}</b> не найдено. ${isGroupChat ? 'Бот автоматически пришлет его в этот чат, как только оно появится' : ''}`;
+
+        await ctx.reply(text, isGroupChat ? {} : { reply_markup: finalKb });
+        return;
+    }
 
     const mediaGroup = images.buffers.map(buf => (
         {
@@ -72,12 +85,12 @@ export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: 
             parse_mode: 'HTML' as const,
         }));
 
-    await deleteMessage();
-
     await ctx.replyWithMediaGroup(mediaGroup);
-    await ctx.reply(`⬆️ ${sendScheduleText[position][type]} <b>${normalizedValue}</b> ${images.weekTitle}`,
-        {
-            reply_markup: finalKb,
-        },
+    let text = `⬆️ ${sendScheduleText[position][type]} <b>${normalizedValue}</b> ${images.weekTitle}`
+
+    await ctx.reply(
+        text,
+        isGroupChat ? {} : { reply_markup: finalKb },
     );
+    await deleteMessage();
 }

@@ -1,17 +1,17 @@
 import { UserContext } from '@/src/types/bot.js';
-import { navKb } from '@/src/bots/main/utils/nav.kb.js';
+import { listKb } from '@/src/bots/main/keyboards/list.kb.js';
 import { cacheService } from '@/src/services/cache.service.js';
 import { ScheduleType } from '@/src/types/schedule.js';
 import { Key } from '@/src/types/keys.js';
 
-export async function showListMenu(
+export async function listTypeMenu(
     ctx: UserContext,
     page = 0,
     type: ScheduleType,
-    text: string,
-    isNewMessage: boolean = false,
+    text?: string,
 ) {
     const list = await cacheService.getList(type);
+    const isGroupChat = ctx.chat?.type !== 'private';
 
     // сортировка: если начинается с цифры → по числам, иначе по алфавиту
     const sorted = (list as Key[]).sort((a, b) => {
@@ -31,22 +31,24 @@ export async function showListMenu(
         return aVal.localeCompare(bVal, 'ru');
     });
 
-    const keyboard = navKb(
+    const keyboard = listKb(
         type,
         sorted,
         page,
         6,
         item => item.normalizedValue,
         item => item.id,
+        isGroupChat
     );
 
-    if (isNewMessage) {
-        await ctx.reply(text, {
-            reply_markup: keyboard,
-        });
-    } else {
+    if (text) {
         await ctx.editMessageText(text, {
             reply_markup: keyboard,
         });
+    } else {
+        await ctx.editMessageReplyMarkup({
+            reply_markup: keyboard,
+        });
+
     }
 }

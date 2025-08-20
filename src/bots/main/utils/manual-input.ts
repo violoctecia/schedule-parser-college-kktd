@@ -1,11 +1,11 @@
 import { UserContext } from '@/src/types/bot.js';
 import { ScheduleType } from '@/src/types/schedule.js';
 import { cacheService } from '@/src/services/cache.service.js';
-import { showListMenu } from '@/src/bots/main/menus/list.menu.js';
 import { findClosest } from '@/src/utils/find-closest.js';
-import { navKb } from '@/src/bots/main/utils/nav.kb.js';
 import { sendSchedule } from '@/src/bots/main/utils/send-schedule.js';
 import { normalizeTeacher } from '@/src/utils/normalize-teacher.js';
+import { listKb } from '@/src/bots/main/keyboards/list.kb.js';
+import { listTypeMenu } from '@/src/bots/main/menus/list.menu.js';
 
 export async function handleManualInput(ctx: UserContext, type: ScheduleType, value: string) {
     const list = await cacheService.getList(type);
@@ -36,13 +36,14 @@ export async function handleManualInput(ctx: UserContext, type: ScheduleType, va
         if (closeMatches?.length) {
             const filteredList = list.filter(o => closeMatches.includes(o.id));
 
-            let keyboard = navKb(
+            let keyboard = listKb(
                 type,
                 filteredList,
                 0,
                 6,
                 item => item.normalizedValue,
                 item => item.id,
+                false
             );
 
             await ctx.reply(
@@ -50,7 +51,7 @@ export async function handleManualInput(ctx: UserContext, type: ScheduleType, va
                 { reply_markup: keyboard },
             );
         } else {
-            await showListMenu(ctx, 0, type as ScheduleType, `❌ Не удалось найти ${texts[type]} и похожих вариантов в текущей таблице расписания.\n\nПопробуйте поискать среди готовых вариантов или ввести вручную еще раз.`, true);
+            await listTypeMenu(ctx, 0, type as ScheduleType, `❌ Не удалось найти ${texts[type]} и похожих вариантов в текущей таблице расписания.\n\nПопробуйте поискать среди готовых вариантов или ввести вручную еще раз.`);
         }
     }
 }

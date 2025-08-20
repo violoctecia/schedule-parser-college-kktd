@@ -1,13 +1,14 @@
 import { InlineKeyboard } from 'grammy';
 import { ScheduleType } from '@/src/types/schedule.js';
 
-export function navKb<T>(
+export function listKb<T>(
     type: ScheduleType,
     items: T[],
     page: number,
     pageSize: number,
     getLabel: (item: T) => string,
     getValue: (item: T) => string,
+    isGroupChat: boolean
 ) {
     const start = page * pageSize;
     const end = start + pageSize;
@@ -31,11 +32,10 @@ export function navKb<T>(
         }
     }
 
-
     const navKeyboard = new InlineKeyboard();
 
     if (page > 0) navKeyboard.text('⬅️ Назад', `page_${type}_${page - 1}`);
-    navKeyboard.text('🏠 Назад', `select_flow_type`);
+    if (!isGroupChat) navKeyboard.text('🏠 Назад', `home`);
     if (end < items.length) navKeyboard.text('Вперед ➡️', `page_${type}_${page + 1}`);
 
     kb.append(navKeyboard);

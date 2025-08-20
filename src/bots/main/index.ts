@@ -1,9 +1,11 @@
-import { Bot, GrammyError, HttpError, InlineKeyboard, session } from 'grammy';
+import { Bot, GrammyError, HttpError, session } from 'grammy';
 import { UserContext, UserSessionData } from '@/src/types/bot.js';
 import { cfg } from '@/src/config.js';
 import { registerCallbacks } from '@/src/bots/main/callbacks.js';
 import { handleManualInput } from '@/src/bots/main/utils/manual-input.js';
 import { notifyAdmins } from '@/src/bots/admin/index.js';
+import { botChatsService } from '@/src/database/bot/bot-chats.service.js';
+import { selectTypeKb } from '@/src/bots/main/keyboards/select-type.kb.js';
 
 export const bot = new Bot<UserContext>(cfg.botToken);
 
@@ -22,23 +24,16 @@ bot.api.config.use((prev, method, payload) =>
 );
 
 bot.command('start', async (ctx) => {
+    await botChatsService.synchronize(ctx);
 
     if (ctx.chat.type === 'private') {
-        await ctx.reply(
-            '👋👋 Привет! \n\nБот обновлен и работает в штатном режиме. \nТакже вы можете добавить его в свою беседу и автоматически получать новые расписания. \n\nВсего 2 шага до вашего расписания 👇', {
-                reply_markup: new InlineKeyboard().text('Продолжить ▶️', 'select_flow_type'),
-            },
-        );
-    } else {
-        await ctx.reply(
-            '👋 Всем привет! \nПеред тем как бот начнет присылать новые расписания в этот чат, необходимо его настроить',
-            {
-                reply_markup: new InlineKeyboard().text('Начать ▶️', 'select_flow_type'),
-            },
-        );
+        await ctx.reply('🏠 Выберите тип расписания для поиска:', { reply_markup: selectTypeKb(ctx) });
+        return;
     }
 
+    await ctx.reply('Выберите тип расписания: группа / преподаватель', { reply_markup: selectTypeKb(ctx) });
 });
+
 
 bot.on('message:text', async (ctx) => {
     if (ctx.session.isSelecting && ctx.session.currentSchedule?.type) {
@@ -52,17 +47,14 @@ bot.on('my_chat_member', async (ctx) => {
     const chatId = ctx.chat.id;
 
     if (status === 'member' || status === 'administrator') {
-       try {
-           await ctx.api.sendMessage(
-               chatId,
-               '👋 Всем привет! /nПеред тем как бот начнет присылать новые расписания в этот чат, необходимо его настроить',
-               {
-                   reply_markup: new InlineKeyboard().text('Начать ▶️', 'select_flow_type'),
-               },
-           );
-       } catch (e) {
+        try {
+            await ctx.api.sendMessage(
+                chatId,
+                '👋 Всем привет! \nБот может автоматически присылать новые расписания в этот чат, нужно лишь выбрать нужный параметр для этого чата.\n\n Чтобы начать, введите /start',
+            );
+        } catch (e) {
 
-       }
+        }
     }
 
     if (status === 'kicked' || status === 'left') {
@@ -83,11 +75,11 @@ bot.catch((err) => {
         console.error('‼️ Unknown error:', e);
     }
 
-    if (ctx.chatId) {
-        ctx.api.sendMessage(ctx.chatId, 'Кажется что-то пошло не так... Нам уже известна эта ошибка и в ближайшее время она будет исправлена, а пока можете начать заново.', {
-            reply_markup: new InlineKeyboard().text('Продолжить ▶️', 'select_flow_type'),
-        });
-    }
+    // if (ctx.chatId) {
+    //     ctx.api.sendMessage(ctx.chatId, 'Кажется что-то пошло не так... Нам уже известна эта ошибка и в ближайшее время она будет исправлена, а пока можете начать заново.', {
+    //         reply_markup: new InlineKeyboard().text('Продолжить ▶️', 'select_flow_type'),
+    //     });
+    // }
 
     notifyAdmins('❌ Ошибка в основном боте:\n' + JSON.stringify(e));
 });

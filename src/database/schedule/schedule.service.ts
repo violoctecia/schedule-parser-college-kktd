@@ -19,6 +19,7 @@ export const scheduleService = {
 
     async getScheduleBy(position: 'current' | 'next', param: 'teacherId' | 'groupId' | 'audienceId', value: string): Promise<Schedule | string> {
         const allowedParams = ['teacherId', 'groupId', 'audienceId'];
+
         if (!allowedParams.includes(param)) {
             return `❌ Invalid param ${param}`;
         }
@@ -26,9 +27,11 @@ export const scheduleService = {
         let weekSchedule = await WeekScheduleModel.findOne({ isCurrent: true });
 
         if (position === 'next') {
+
             const nextWeek = await WeekScheduleModel.findOne({
                 startDate: { $gt: weekSchedule!.endDate },
             }).sort({ startDate: 1 });
+
 
             if (!nextWeek) {
                 return '❌ Next week not found';
@@ -36,6 +39,7 @@ export const scheduleService = {
 
             weekSchedule = nextWeek;
         }
+
 
         const filteredLessons = weekSchedule!.lessons.filter(
             lesson => lesson[param] === value,

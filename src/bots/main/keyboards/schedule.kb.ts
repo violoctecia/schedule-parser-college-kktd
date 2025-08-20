@@ -12,10 +12,10 @@ export function scheduleKb(ctx: UserContext, position: 'current' | 'next' = 'cur
     }
 
     if (ctx.session.rememberedSchedule && ctx.session.rememberedSchedule.key === ctx.session.currentSchedule?.key) {
-        kb.text(`🔕 Забыть выбор`, `forgot_${position}`).row();
+        kb.text(`🔕 Забыть выбор`, `event_${position}_forgot`).row();
     } else {
-        kb.text(`🔔 Запомнить выбор`, `remember_${position}`).row();
+        kb.text(`🔔 Запомнить ${ctx.session.currentSchedule?.normalizedValue}`, `event_${position}_remember`).row();
     }
 
-    return kb.text('🏠 Поменять выбор', 'select_flow_type');
+    return kb.text('🏠 Поменять выбор', 'home');
 }

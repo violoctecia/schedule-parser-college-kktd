@@ -1,23 +1,22 @@
-import { Bot, InlineKeyboard } from 'grammy';
+import { Bot } from 'grammy';
 import { UserContext } from '@/src/types/bot.js';
 import { ScheduleType } from '@/src/types/schedule.js';
-import { showSelectTypeMenu } from '@/src/bots/main/menus/select-type.menu.js';
 import { sendSchedule } from '@/src/bots/main/utils/send-schedule.js';
-import { showListMenu } from '@/src/bots/main/menus/list.menu.js';
-import { scheduleKb } from '@/src/bots/main/utils/schedule.kb.js';
+import { listTypeMenu } from '@/src/bots/main/menus/list.menu.js';
+import { scheduleKb } from '@/src/bots/main/keyboards/schedule.kb.js';
+import { botChatsService } from '@/src/database/bot/bot-chats.service.js';
+import { selectTypeKb } from '@/src/bots/main/keyboards/select-type.kb.js';
 
-const listMenuTexts = {
-    group: '👥 <b>Выберите группу</b> из предложенных вариантов\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот попробует подсказать варианты',
-    teacher: '👨‍🏫 <b>Выберите преподавателя</b> из предложенных вариантов. Список для удобства отсортирован по алфавиту\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот попробует подсказать варианты',
-    audience: 'Выберите аудиторию из предложенных вариантов.\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот попробует подсказать варианты',
-};
 
 export function registerCallbacks(bot: Bot<UserContext>) {
 
     // Menu Select Type
-    bot.callbackQuery('select_flow_type', async (ctx) => {
+    bot.callbackQuery('home', async (ctx) => {
         ctx.session.isSelecting = false;
-        await showSelectTypeMenu(ctx, true);
+        await botChatsService.synchronize(ctx);
+
+        await ctx.editMessageText('🏠 Выберите тип расписания для поиска:',
+            { reply_markup: selectTypeKb(ctx) });
         await ctx.answerCallbackQuery();
     });
 
@@ -26,12 +25,23 @@ export function registerCallbacks(bot: Bot<UserContext>) {
         const data = ctx.callbackQuery.data;
         const [, type] = data.split('_');
 
-        ctx.session.isSelecting = true;
-        ctx.session.currentSchedule = {
-            type: type as ScheduleType,
+        const texts = {
+            group: '👥 Выберите <b>группу</b> из предложенных вариантов',
+            teacher: '👨‍🏫 Выберите <b>преподавателя</b> из предложенных вариантов. Список для удобства отсортирован по алфавиту',
+            audience: '🏫 Выберите <b>аудиторию</b> из предложенных вариантов.',
         };
 
-        await showListMenu(ctx, 0, type as ScheduleType, listMenuTexts[type as ScheduleType]);
+        let text = texts[type as ScheduleType];
+
+        if (ctx.chat?.type === 'private') {
+            ctx.session.isSelecting = true;
+            ctx.session.currentSchedule = {
+                type: type as ScheduleType,
+            };
+            text = text + '\n\n✏️ Или <b>попробуйте ввести вручную</b>, бот попробует подсказать варианты';
+        }
+
+        await listTypeMenu(ctx, 0, type as ScheduleType, text);
         await ctx.answerCallbackQuery();
     });
 
@@ -40,7 +50,7 @@ export function registerCallbacks(bot: Bot<UserContext>) {
         const data = ctx.callbackQuery.data;
         const [, type, value] = data.split('_');
 
-        await sendSchedule(ctx, type as ScheduleType, value, 'current');
+        await sendSchedule(ctx, type as ScheduleType, value, 'current', true);
         await ctx.answerCallbackQuery();
     });
 
@@ -53,40 +63,39 @@ export function registerCallbacks(bot: Bot<UserContext>) {
         await ctx.answerCallbackQuery();
     });
 
-    // Remember Selection
-    bot.callbackQuery(/remember_+/, async (ctx) => {
+    // Remember/Forgot Selection
+    bot.callbackQuery(/event_+/, async (ctx) => {
         if (!ctx.session.currentSchedule) return;
 
         const currentSchedule = ctx.session.currentSchedule;
         if (!currentSchedule.normalizedValue || !currentSchedule.key) return;
 
         const data = ctx.callbackQuery.data;
-        const [, position] = data.split('_');
+        const [, position, event] = data.split('_');
 
-        ctx.session.rememberedSchedule = {
-            type: currentSchedule.type,
-            normalizedValue: currentSchedule.normalizedValue,
-            key: currentSchedule.key
+        if (event === 'remember') {
+            ctx.session.rememberedSchedule = {
+                type: currentSchedule.type,
+                normalizedValue: currentSchedule.normalizedValue,
+                key: currentSchedule.key,
+            };
+        } else {
+            ctx.session.rememberedSchedule = null;
         }
 
+        await botChatsService.setSchedule(ctx);
         await ctx.editMessageReplyMarkup({
-            reply_markup: scheduleKb(ctx, position as 'current' | 'next', currentSchedule.type, currentSchedule.key)
-        })
-
+            reply_markup: scheduleKb(ctx, position as 'current' | 'next', currentSchedule.type, currentSchedule.key),
+        });
         await ctx.answerCallbackQuery();
     });
 
     // Navigation List
     bot.callbackQuery(/page_(group|teacher|audience)_\d+/, async (ctx) => {
         const data = ctx.callbackQuery.data;
-        const regex = /^page_(group|teacher|audience)_(.+)$/;
-        const match = data.match(regex);
-        if (!match) return;
+        const [, type, page] = data.split('_');
 
-        const type = match[1] as ScheduleType;
-        const page = Number(match[2].trim());
-
-        await showListMenu(ctx, page, type, listMenuTexts[type]);
+        await listTypeMenu(ctx, Number(page), type as ScheduleType);
         await ctx.answerCallbackQuery();
     });
 }
