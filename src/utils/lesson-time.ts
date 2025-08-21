@@ -4,14 +4,14 @@ type CategoryType = 'juniors' | 'seniors';
 const times = {
     seniors: {
         monday: {
-            1: "9:20 - 10:40",
+            1: "09:20 - 10:40",
             2: "11:30 - 12:50",
             3: "13:00 - 14:20",
             4: "14:30 - 15:50",
             5: "16:00 - 17:20"
         },
         other: {
-            1: "8:30 - 9:50",
+            1: "08:30 - 09:50",
             2: "10:00 - 11:20",
             3: "12:05 - 13:25",
             4: "13:35 - 14:55",
@@ -21,15 +21,15 @@ const times = {
     },
     juniors: {
         monday: {
-            1: "9:20 - 10:40",
+            1: "09:20 - 10:40",
             2: "11:30 - 12:50",
             3: "13:00 - 14:20",
             4: "14:30 - 15:50",
             5: "16:00 - 17:20"
         },
         other: {
-            1: "8:30 - 9:50",
-            2: "10:00 - 12:00 (С перерывом)",
+            1: "08:30 - 09:50",
+            2: "10:00 - 12:00",
             3: "12:25 - 13:25",
             4: "13:35 - 14:55",
             5: "15:05 - 16:25",
@@ -38,7 +38,7 @@ const times = {
     }
 }
 
-export function getTimeForLesson(lessonNumber: number, group: string, day: string): string {
+export function getTimeForLesson(lessonNumber: number, group: string, day: string) {
     const afterDash = group.split('-').pop() || '';
     const courseNumber = parseInt(afterDash[0]);
     const category: CategoryType = courseNumber <= 1 ? 'juniors' : 'seniors';
@@ -51,11 +51,10 @@ export function getTimeForLesson(lessonNumber: number, group: string, day: strin
     }
 
     const daySchedule = times[category][dayKey as DayType];
+    const time = daySchedule[lessonNumber as keyof typeof daySchedule];
 
-    if (lessonNumber in daySchedule) {
-        return daySchedule[lessonNumber as keyof typeof daySchedule];
-    }
+    if (!time) return { start: '', end: '' };
 
-    return '';
-
+    const [start, end] = time.split(' - ');
+    return { start, end };
 }

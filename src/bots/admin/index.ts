@@ -140,14 +140,9 @@ bot.catch((err) => {
 });
 
 export async function notifyAdmins(message: string) {
-    console.log('Попытка отправить уведомление админам:', message);
-    console.log('Список админов:', cfg.adminChatIds);
-
     for (const adminId of cfg.adminChatIds) {
         try {
-            console.log(`📤 Отправка админу: ${adminId}`);
-            const res = await bot.api.sendMessage(adminId, message);
-            console.log('✅ Успешно отправлено:', res.chat.id);
+           await bot.api.sendMessage(adminId, message);
         } catch (err) {
             console.error(`❌ Не удалось отправить сообщение админу ${adminId}:`, err);
         }

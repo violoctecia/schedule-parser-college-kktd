@@ -97,7 +97,6 @@ export const scheduleService = {
         }
 
         return grouped;
-
     },
 
     async setCurrent(weekTitleId: string) {

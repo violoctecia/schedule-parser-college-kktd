@@ -58,7 +58,7 @@ class CacheService {
         const schedule = await scheduleService.getScheduleBy(position, typeMap[type], value);
         if (!schedule || typeof schedule === 'string') return null;
 
-        const scheduleParts = this.splitSchedule(schedule as Schedule, 18);
+        const scheduleParts = this.splitSchedule(schedule as Schedule, 22);
 
         for (let i = 0; i < scheduleParts.length; i++) {
             const part = scheduleParts[i];

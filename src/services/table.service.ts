@@ -143,19 +143,21 @@ const tableService = {
             return { normalizedValue: '', id: '' };
         }
 
-        const str = value.toString().trim();
+        let str = value.toString().trim();
+
+
         if (!str || str === '\'') {
             return { normalizedValue: '', id: '' };
         }
 
         const newKey: Key = {
             normalizedValue: str,
-            id: crypto
-                .createHash('md5')
-                .update(str)
-                .digest('hex')
+            id: str.toLowerCase()
+                .replace(/[^a-zа-я0-9]/gi, '')
                 .slice(0, 16),
         };
+
+        if (newKey.id === 'м3' || newKey.id === 'мз') newKey.id = 'мз'
 
         const keysArray =
             type === 'group'
@@ -329,7 +331,7 @@ const tableService = {
         return lessons;
     },
 
-    parseDate(): {startDate: Date, endDate: Date} {
+    parseDate(): { startDate: Date, endDate: Date } {
         const matches = this.weekTitle.match(/\d{1,2}\.\d{1,2}\.\d{2,4}/g);
 
         if (!matches || matches.length < 2) {
@@ -360,7 +362,7 @@ const tableService = {
             lessons.push(...dayLessons);
         }
 
-        const {startDate, endDate} = this.parseDate();
+        const { startDate, endDate } = this.parseDate();
 
         const weekLessons: WeekLessons = {
             startDate,

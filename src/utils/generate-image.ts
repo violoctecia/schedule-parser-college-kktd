@@ -7,15 +7,12 @@ import { getTimeForLesson } from '@/src/utils/lesson-time.js';
 
 
 const cfg = {
-    backgroundColorVars: ['#dedede', '#dcdaef'],
-    get backgroundColor() {
-        return this.backgroundColorVars[Math.floor(Math.random() * this.backgroundColorVars.length)];
-    },
+    backgroundColor: '#dedede',
     dayBackgroundColor: '#fffffd',
     textColor: '#050505',
-    secondTextColor: 'rgba(5, 5, 5, 0.6)',
+    secondTextColor: '#9B9A96',
     lineColor: 'rgba(5, 5, 5, 0.1)',
-    borderRadius: 20,
+    borderRadius: 12,
     scale: 3, // for Retina
 };
 
@@ -24,7 +21,7 @@ function calcDayHeight(day: DayLessons) {
 
     const numbersOfLessons = Object.keys(day).map(Number);
     numbersOfLessons.forEach((key) => {
-        height += 12; // время
+
 
         const lessons = day[key];
         lessons.forEach((lesson) => {
@@ -77,10 +74,10 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
 
         for (const dayKey of weekDays) {
             const dayLessons = data[dayKey];
-            totalHeight += calcDayHeight(dayLessons) + 28 + 8;
+            totalHeight += calcDayHeight(dayLessons) + 24 + 8;
         }
 
-        return totalHeight + 58 + 20;
+        return totalHeight + 30 + 10;
     }
 
     function getFirstValue(obj: Record<any, any>) {
@@ -104,38 +101,33 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
 
     const param = getFirstValue(getFirstValue(data))[0][type === 'teacher' ? 'teacherNormalized' : type];
 
-    setText(ctx, '16px Arial', cfg.secondTextColor, 'start', 'top');
-    const title = `Расписание для `;
-    ctx.fillText(title, 20, 20);
-
-    const titleStartWidth = ctx.measureText(title).width;
-    setText(ctx, '16px Arial', cfg.textColor, 'start', 'top');
-    ctx.fillText(param + ' ', 20 + titleStartWidth, 20);
+    setText(ctx, '12px Arial', cfg.textColor, 'start', 'top');
+    ctx.fillText(param + ' ', 20, 10);
 
     const titleParamWidth = ctx.measureText(param + ' ').width;
-    setText(ctx, '16px Arial', cfg.secondTextColor, 'start', 'top');
-    ctx.fillText(getFirstValue(getFirstValue(data))[0].weekTitle, 20 + titleParamWidth + titleStartWidth, 20);
+    setText(ctx, '12px Arial', cfg.secondTextColor, 'start', 'top');
+    ctx.fillText(getFirstValue(getFirstValue(data))[0].weekTitle, 20 + titleParamWidth, 10);
 
 
     setText(ctx, '12px Arial', cfg.secondTextColor, 'right');
-    ctx.fillText('Ауд.', baseWidth - 30, 64); // аудитория
+    ctx.fillText('Ауд.', baseWidth - 30, 35); // аудитория
 
 
     function generateLessons(lessons: Lesson[], numberOfLesson: number, startY: number): number {
         let currentY = startY;
 
         const time = getTimeForLesson(numberOfLesson, lessons[0].group, lessons[0].day);
-        setText(ctx, '12px Arial', cfg.secondTextColor, 'start');
-        ctx.fillText(time, 66, currentY - 2); // время
+        setText(ctx, '14px Arial', cfg.secondTextColor, 'center');
+        ctx.fillText(time.start, 80, currentY); // время
+        ctx.fillText(time.end, 80, currentY + 16);
 
-        currentY += 12;
         setText(ctx, '16px Arial', cfg.textColor, 'start');
         ctx.fillText(numberOfLesson.toString() + '.', 40, currentY); // номер пары
 
         lessons.forEach((lesson, index) => {
 
             setText(ctx, '16px Arial', cfg.textColor, 'start');
-            ctx.fillText(`${lesson.name}${lesson.subgroup ? ` - ${lesson.subgroup} подгруппа` : ''}`, 66, currentY, baseWidth - 66 - 90); // предмет + подгруппа
+            ctx.fillText(`${lesson.name}${lesson.subgroup ? ` - ${lesson.subgroup} подгруппа` : ''}`, 110, currentY - 1, baseWidth - 66 - 90); // предмет + подгруппа
 
             currentY += 2;
             setText(ctx, '16px Arial', cfg.secondTextColor, 'right');
@@ -146,11 +138,11 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
             let groupWidth = 0;
             if (type === 'teacher') {
                 setText(ctx, '14px Arial', cfg.secondTextColor, 'start');
-                ctx.fillText(lesson.group + ' - ', 66, currentY);
+                ctx.fillText(lesson.group + ' - ', 110, currentY);
                 groupWidth = ctx.measureText(lesson.group).width + 16;
             }
             setText(ctx, '14px Arial', cfg.secondTextColor, 'start');
-            ctx.fillText(lesson.teacher, 66 + groupWidth, currentY); // группа / преподователь
+            ctx.fillText(lesson.teacher, 110 + groupWidth, currentY); // группа / преподователь
 
 
             if (index < lessons.length - 1) {
@@ -164,9 +156,9 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
 
     function generateDay(day: DayLessons, startY: number) {
         setText(ctx, '16px Arial', cfg.textColor, 'start', 'top');
-        ctx.fillText(formatText(getFirstValue(day)[0].day), 20, startY); // день недели
+        ctx.fillText(formatText(getFirstValue(day)[0].day), 20, startY + 1); // день недели
 
-        let currentY = startY + 28;
+        let currentY = startY + 24;
         const lessonsKeys = Object.keys(day).map(Number);
         const dayHeight = calcDayHeight(day);
 
@@ -186,7 +178,7 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
             if (day[key][0].isFullDay) {
                 currentY += 12;
                 setText(ctx, '14px Arial', cfg.secondTextColor, 'center');
-                ctx.fillText(day[key][0].name || 'Пустой день', baseWidth / 2, currentY + 8);
+                ctx.fillText(day[key][0].name || 'Пустой день', baseWidth / 2, currentY + 5);
             } else {
                 newY = generateLessons(day[key], key, newY);
 
@@ -205,10 +197,10 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
 
         });
 
-        return dayHeight + 28 + 8;
+        return dayHeight + 24 + 8;
     }
 
-    let currentY = 58;
+    let currentY = 30;
     for (const dayKey of weekDays) {
         const dayLessons = data[dayKey];
         currentY += generateDay(dayLessons, currentY);
