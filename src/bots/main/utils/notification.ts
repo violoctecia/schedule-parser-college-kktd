@@ -20,8 +20,8 @@ export async function sendNextSchedule() {
         const isGroupChat = chat.chatType !== 'private';
 
         if (schedule) {
-            const images = await cacheService.getImage(schedule.type, schedule.key, 'next');
-            console.log(images?.weekTitle);
+            const images = await cacheService.getImage(schedule.type, schedule.key, 'new');
+
             if (images) {
                 const mediaGroup = images.buffers.map(buf => ({
                     type: 'photo' as const,

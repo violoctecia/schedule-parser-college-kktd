@@ -1,6 +1,6 @@
 import { Bot } from 'grammy';
 import { UserContext } from '@/src/types/bot.js';
-import { ScheduleType } from '@/src/types/schedule.js';
+import { SchedulePosition, ScheduleType } from '@/src/types/schedule.js';
 import { sendSchedule } from '@/src/bots/main/utils/send-schedule.js';
 import { listTypeMenu } from '@/src/bots/main/menus/list.menu.js';
 import { scheduleKb } from '@/src/bots/main/keyboards/schedule.kb.js';
@@ -59,7 +59,7 @@ export function registerCallbacks(bot: Bot<UserContext>) {
         const data = ctx.callbackQuery.data;
         const [, position, type, value] = data.split('_');
 
-        await sendSchedule(ctx, type as ScheduleType, value, position as 'current' | 'next');
+        await sendSchedule(ctx, type as ScheduleType, value, position as Extract<SchedulePosition, 'current' | 'new'>);
         await ctx.answerCallbackQuery();
     });
 
@@ -85,7 +85,7 @@ export function registerCallbacks(bot: Bot<UserContext>) {
 
         await botChatsService.setSchedule(ctx);
         await ctx.editMessageReplyMarkup({
-            reply_markup: scheduleKb(ctx, position as 'current' | 'next', currentSchedule.type, currentSchedule.key),
+            reply_markup: scheduleKb(ctx, position as Extract<SchedulePosition, 'current' | 'new'>, currentSchedule.type, currentSchedule.key),
         });
         await ctx.answerCallbackQuery();
     });

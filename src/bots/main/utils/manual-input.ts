@@ -51,7 +51,7 @@ export async function handleManualInput(ctx: UserContext, type: ScheduleType, va
                 { reply_markup: keyboard },
             );
         } else {
-            await listTypeMenu(ctx, 0, type as ScheduleType, `❌ Не удалось найти ${texts[type]} и похожих вариантов в текущей таблице расписания.\n\nПопробуйте поискать среди готовых вариантов или ввести вручную еще раз.`);
+            await listTypeMenu(ctx, 0, type as ScheduleType, `❌ Не удалось найти ${texts[type]} и похожих вариантов в текущей таблице расписания.\n\nПопробуйте поискать среди готовых вариантов или ввести вручную еще раз.`, true);
         }
     }
 }

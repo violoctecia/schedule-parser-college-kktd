@@ -9,6 +9,7 @@ export async function listTypeMenu(
     page = 0,
     type: ScheduleType,
     text?: string,
+    isNewMessage: boolean = false
 ) {
     const list = await cacheService.getList(type);
     const isGroupChat = ctx.chat?.type !== 'private';
@@ -40,6 +41,13 @@ export async function listTypeMenu(
         item => item.id,
         isGroupChat
     );
+
+    if (isNewMessage && text) {
+        await ctx.reply(text, {
+            reply_markup: keyboard,
+        });
+        return
+    }
 
     if (text) {
         await ctx.editMessageText(text, {

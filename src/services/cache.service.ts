@@ -1,4 +1,4 @@
-import { DayLessons, Schedule, ScheduleType } from '@/src/types/schedule.js';
+import { DayLessons, Schedule, SchedulePosition, ScheduleType } from '@/src/types/schedule.js';
 import { Key } from '@/src/types/keys.js';
 import { keysService } from '@/src/database/keys/keys.service.js';
 import { scheduleService } from '@/src/database/schedule/schedule.service.js';
@@ -6,7 +6,7 @@ import { generateImage } from '@/src/utils/generate-image.js';
 import { cfg } from '@/src/config.js';
 
 type List = Key[];
-type ImageKey = `${ScheduleType}_${string}_${'current' | 'next'}_part_${number}`;
+type ImageKey = `${ScheduleType}_${string}_${SchedulePosition}_part_${number}`;
 type ImageCacheEntry = {
     buffer: Buffer;
     weekTitle: string;
@@ -30,7 +30,7 @@ class CacheService {
 
     async getImage(type: ScheduleType,
                    value: string,
-                   position: 'current' | 'next'): Promise<{ buffers: Buffer[]; weekTitle: string } | null> {
+                   position: SchedulePosition): Promise<{ buffers: Buffer[]; weekTitle: string } | null> {
         const buffers: Buffer[] = [];
         let weekTitle: string | null = null;
         let idx = 1;
@@ -58,7 +58,7 @@ class CacheService {
         const schedule = await scheduleService.getScheduleBy(position, typeMap[type], value);
         if (!schedule || typeof schedule === 'string') return null;
 
-        const scheduleParts = this.splitSchedule(schedule as Schedule, 22);
+        const scheduleParts = this.splitSchedule(schedule as Schedule, 30);
 
         for (let i = 0; i < scheduleParts.length; i++) {
             const part = scheduleParts[i];

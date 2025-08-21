@@ -1,12 +1,12 @@
 import { InlineKeyboard } from 'grammy';
-import { ScheduleType } from '@/src/types/schedule.js';
+import { SchedulePosition, ScheduleType } from '@/src/types/schedule.js';
 import { UserContext } from '@/src/types/bot.js';
 
-export function scheduleKb(ctx: UserContext, position: 'current' | 'next' = 'current', type: ScheduleType, key: string) {
+export function scheduleKb(ctx: UserContext, position: SchedulePosition = 'current', type: ScheduleType, key: string) {
     const kb = new InlineKeyboard();
 
     if (position === 'current') {
-        kb.text(`Следующее расписание ➡️`, `schedule_next_${type}_${key}`).row();
+        kb.text(`Следующее расписание ➡️`, `schedule_new_${type}_${key}`).row();
     } else {
         kb.text(`⬅️ Текущее расписание `, `schedule_current_${type}_${key}`).row();
     }

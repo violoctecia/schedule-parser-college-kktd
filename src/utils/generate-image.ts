@@ -10,7 +10,7 @@ const cfg = {
     backgroundColor: '#dedede',
     dayBackgroundColor: '#fffffd',
     textColor: '#050505',
-    secondTextColor: '#9B9A96',
+    secondTextColor: '#757573',
     lineColor: 'rgba(5, 5, 5, 0.1)',
     borderRadius: 12,
     scale: 3, // for Retina
@@ -118,8 +118,8 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
 
         const time = getTimeForLesson(numberOfLesson, lessons[0].group, lessons[0].day);
         setText(ctx, '14px Arial', cfg.secondTextColor, 'center');
-        ctx.fillText(time.start, 80, currentY); // время
-        ctx.fillText(time.end, 80, currentY + 16);
+        ctx.fillText(time.start, 80, currentY + 0.5); // время
+        ctx.fillText(time.end, 80, currentY + 18);
 
         setText(ctx, '16px Arial', cfg.textColor, 'start');
         ctx.fillText(numberOfLesson.toString() + '.', 40, currentY); // номер пары
@@ -129,18 +129,19 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
             setText(ctx, '16px Arial', cfg.textColor, 'start');
             ctx.fillText(`${lesson.name}${lesson.subgroup ? ` - ${lesson.subgroup} подгруппа` : ''}`, 110, currentY - 1, baseWidth - 66 - 90); // предмет + подгруппа
 
-            currentY += 2;
-            setText(ctx, '16px Arial', cfg.secondTextColor, 'right');
-            ctx.fillText(lesson.audience || '-', baseWidth - 30, currentY); // аудитория
+            currentY += 0.5;
+            setText(ctx, '14px Arial', cfg.secondTextColor, 'right');
+            ctx.fillText(lesson.audience === '\'' ? ' ' : lesson.audience || ' ', baseWidth - 30, currentY); // аудитория
 
             currentY += 16;
 
             let groupWidth = 0;
-            if (type === 'teacher') {
+            if (type === 'teacher' || type === 'audience') {
                 setText(ctx, '14px Arial', cfg.secondTextColor, 'start');
                 ctx.fillText(lesson.group + ' - ', 110, currentY);
                 groupWidth = ctx.measureText(lesson.group).width + 16;
             }
+
             setText(ctx, '14px Arial', cfg.secondTextColor, 'start');
             ctx.fillText(lesson.teacher, 110 + groupWidth, currentY); // группа / преподователь
 

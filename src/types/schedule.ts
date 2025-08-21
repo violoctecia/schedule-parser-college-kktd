@@ -27,13 +27,13 @@ export type Lesson = {
     groupId: string;
 }
 
+export type SchedulePosition = 'current' | 'new' | 'old' | 'unset';
+
 export type WeekLessons = {
     lessons: Lesson[];
     weekTitle: string;
     weekTitleId: string;
-    startDate: Date;
-    endDate: Date;
-    isCurrent: boolean;
+    position: SchedulePosition;
 }
 
 export type ScheduleType = 'group' | 'teacher' | 'audience';

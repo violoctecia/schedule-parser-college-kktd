@@ -1,5 +1,5 @@
 import { WeekScheduleModel } from '@/src/database/schedule/week-schedule.model.js';
-import type { Lesson, Schedule, WeekLessons } from '@/src/types/schedule.js';
+import { Lesson, Schedule, SchedulePosition, WeekLessons } from '@/src/types/schedule.js';
 import { cacheService } from '@/src/services/cache.service.js';
 
 export const scheduleService = {
@@ -13,33 +13,23 @@ export const scheduleService = {
         return `✅ Schedule for week ${data.weekTitle} created/updated`;
     },
 
-    delete(weekTitleId: string) {
-        return WeekScheduleModel.deleteOne({ weekTitleId });
+    async delete(weekTitleId: string) {
+        const res = await WeekScheduleModel.deleteOne({ weekTitleId });
+        console.log('Deleted count:', res.deletedCount);
+        return res;
     },
 
-    async getScheduleBy(position: 'current' | 'next', param: 'teacherId' | 'groupId' | 'audienceId', value: string): Promise<Schedule | string> {
+    async getScheduleBy(position: SchedulePosition, param: 'teacherId' | 'groupId' | 'audienceId', value: string): Promise<Schedule | string> {
         const allowedParams = ['teacherId', 'groupId', 'audienceId'];
 
         if (!allowedParams.includes(param)) {
             return `❌ Invalid param ${param}`;
         }
 
-        let weekSchedule = await WeekScheduleModel.findOne({ isCurrent: true });
-
-        if (position === 'next') {
-
-            const nextWeek = await WeekScheduleModel.findOne({
-                startDate: { $gt: weekSchedule!.endDate },
-            }).sort({ startDate: 1 });
-
-
-            if (!nextWeek) {
-                return '❌ Next week not found';
-            }
-
-            weekSchedule = nextWeek;
+        let weekSchedule = await WeekScheduleModel.findOne({ position });
+        if (!weekSchedule) {
+            return `❌ WeekSchedule with position ${position} not found`;
         }
-
 
         const filteredLessons = weekSchedule!.lessons.filter(
             lesson => lesson[param] === value,
@@ -99,22 +89,22 @@ export const scheduleService = {
         return grouped;
     },
 
-    async setCurrent(weekTitleId: string) {
+    // Задать позицию для расписания, если задать позицию как текущую, то старая устанавливается в 'old'
+    async setSchedulePosition(weekTitleId: string, position: SchedulePosition) {
         const doc = await WeekScheduleModel.findOne({ weekTitleId });
         if (!doc) {
             return `❌ Week with id ${weekTitleId} not found`;
         }
 
-        if (doc.isCurrent) {
-            return `❌ Week with id ${weekTitleId} is already current`;
+        if (position === 'current') {
+            const currentDoc = await WeekScheduleModel.findOne({ position });
+            if (currentDoc) {
+                currentDoc.position = 'old';
+                await currentDoc.save();
+            }
         }
 
-        const currentDoc = await WeekScheduleModel.findOne({ isCurrent: true });
-        if (currentDoc) {
-            currentDoc.isCurrent = false;
-            await currentDoc.save();
-        }
-        doc.isCurrent = true;
+        doc.position = position;
         await doc.save();
         cacheService.clear();
     },
@@ -124,7 +114,7 @@ export const scheduleService = {
         return docs.map(doc => ({
             weekTitle: doc.weekTitle,
             weekTitleId: doc.weekTitleId,
-            isCurrent: doc.isCurrent,
+            position: doc.position,
         }));
     },
 

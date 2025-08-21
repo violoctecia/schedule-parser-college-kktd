@@ -2,11 +2,9 @@ import XLSX from 'xlsx';
 import type { CellInfo, Lesson, MergeMap, ScheduleType, TableData, WeekLessons } from '@/src/types/schedule.js';
 import { scheduleService } from '@/src/database/schedule/schedule.service.js';
 import { normalizeTeacher } from '@/src/utils/normalize-teacher.js';
-import { normalizeDate } from '@/src/utils/normalize-date.js';
 import { Key } from '@/src/types/keys.js';
 import { keysService } from '@/src/database/keys/keys.service.js';
 import { cacheService } from '@/src/services/cache.service.js';
-import crypto from 'crypto';
 
 const startPoints = {
     groups: 'F10',
@@ -29,7 +27,7 @@ const tableService = {
     groupsKeys: [] as Key[],
     audienceKeys: [] as Key[],
 
-    async load(filePath?: string, buffer?: Buffer): Promise<string> {
+    async load(filePath?: string, buffer?: Buffer): Promise<Omit<WeekLessons, 'lessons'> | string> {
         console.log('✅ Start loading table', filePath ? 'from file' : 'from buffer');
 
         let workbook;
@@ -75,6 +73,7 @@ const tableService = {
         const formatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long' });
 
         this.weekTitle = this.cellInfo(startPoints.weekName, 0, 0)?.value || formatter.format(now);
+
         return await this.fullParse();
     },
 
@@ -331,20 +330,7 @@ const tableService = {
         return lessons;
     },
 
-    parseDate(): { startDate: Date, endDate: Date } {
-        const matches = this.weekTitle.match(/\d{1,2}\.\d{1,2}\.\d{2,4}/g);
-
-        if (!matches || matches.length < 2) {
-            throw new Error(`Не удалось выделить даты из weekTitle: ${this.weekTitle}`);
-        }
-
-        const startDate = normalizeDate(matches[0]);
-        const endDate = normalizeDate(matches[1]);
-
-        return { startDate, endDate };
-    },
-
-    async fullParse() {
+    async fullParse(): Promise<Omit<WeekLessons, 'lessons'>> {
         this.teacherKeys = await keysService.findAllByType('teacher');
         this.groupsKeys = await keysService.findAllByType('group');
         this.audienceKeys = await keysService.findAllByType('audience');
@@ -362,21 +348,24 @@ const tableService = {
             lessons.push(...dayLessons);
         }
 
-        const { startDate, endDate } = this.parseDate();
-
         const weekLessons: WeekLessons = {
-            startDate,
-            endDate,
             weekTitle: this.weekTitle,
             weekTitleId: this.weekTitle.toLowerCase().replace(/[\s.-]/g, ''),
-            isCurrent: false,
             lessons,
+            position: 'unset'
         };
 
         const result = await scheduleService.create(weekLessons);
         console.log(result);
+
         cacheService.clear();
-        return result;
+
+        return {
+            weekTitle: weekLessons.weekTitle,
+            weekTitleId: weekLessons.weekTitleId,
+            position: weekLessons.position
+        };
+
     },
 };
 

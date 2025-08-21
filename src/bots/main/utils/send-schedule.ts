@@ -1,18 +1,18 @@
 import { InputFile } from 'grammy';
-import { ScheduleType } from '@/src/types/schedule.js';
+import { SchedulePosition, ScheduleType } from '@/src/types/schedule.js';
 import { UserContext } from '@/src/types/bot.js';
 import { cacheService } from '@/src/services/cache.service.js';
 import { scheduleKb } from '@/src/bots/main/keyboards/schedule.kb.js';
 import { botChatsService } from '@/src/database/bot/bot-chats.service.js';
 
 
-const sendScheduleText = {
+const sendScheduleText: Record<Extract<SchedulePosition, 'current' | 'new'>, Record<ScheduleType, string>> = {
     current: {
         'group': 'Текущее расписание группы',
         'teacher': 'Текущее расписание для',
         'audience': 'Текущее расписание занятий с аудиторией',
     },
-    next: {
+    new: {
         'group': 'Следующее расписание группы',
         'teacher': 'Следующее расписание для',
         'audience': 'Следующее расписание занятий с аудиторией',
@@ -20,7 +20,7 @@ const sendScheduleText = {
 };
 
 
-export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: string, position: 'current' | 'next' = 'current', isCallback: boolean = true) {
+export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: string, position: Extract<SchedulePosition, 'current' | 'new'> = 'current', isCallback: boolean = true) {
 
     let sent;
 
