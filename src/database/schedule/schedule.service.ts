@@ -19,8 +19,8 @@ export const scheduleService = {
         return res;
     },
 
-    async getScheduleBy(position: SchedulePosition, param: 'teacherId' | 'groupId' | 'audienceId', value: string): Promise<Schedule | string> {
-        const allowedParams = ['teacherId', 'groupId', 'audienceId'];
+    async getScheduleBy(position: SchedulePosition, param: 'teacherId' | 'groupId' | 'audienceId' | 'none', value: string): Promise<Schedule | string | {weekTitle: string}> {
+        const allowedParams = ['teacherId', 'groupId', 'audienceId', 'none'];
 
         if (!allowedParams.includes(param)) {
             return `❌ Invalid param ${param}`;
@@ -29,6 +29,9 @@ export const scheduleService = {
         let weekSchedule = await WeekScheduleModel.findOne({ position });
         if (!weekSchedule) {
             return `❌ WeekSchedule with position ${position} not found`;
+        }
+        if (param === 'none') {
+            return {weekTitle: weekSchedule.weekTitle}
         }
 
         const filteredLessons = weekSchedule!.lessons.filter(
@@ -85,7 +88,6 @@ export const scheduleService = {
                 });
             return ordered;
         }
-
         return grouped;
     },
 

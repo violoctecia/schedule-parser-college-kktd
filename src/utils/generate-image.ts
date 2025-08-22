@@ -27,7 +27,7 @@ function calcDayHeight(day: DayLessons) {
         lessons.forEach((lesson) => {
             height += 16; // предмет + подгруппа
             height += 2;
-            height += 16; // преподаватель / группа
+            height += 14; // преподаватель / группа
         });
 
         if (lessons.length > 1) {

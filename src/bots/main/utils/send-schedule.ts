@@ -86,7 +86,7 @@ export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: 
         }));
 
     await ctx.replyWithMediaGroup(mediaGroup);
-    let text = `⬆️ ${sendScheduleText[position][type]} <b>${normalizedValue}</b> ${images.weekTitle}`
+    let text = `☝️ ${sendScheduleText[position][type]} <b>${normalizedValue}</b> ${images.weekTitle}`
 
     await ctx.reply(
         text,

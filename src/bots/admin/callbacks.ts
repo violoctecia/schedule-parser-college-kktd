@@ -15,11 +15,11 @@ export function registerAdminCallbacks(bot: Bot) {
     });
 
     bot.callbackQuery('send_notification', async (ctx) => {
-        const newSchedule =await scheduleService.getScheduleBy('new', 'groupId', '')
-        console.log(newSchedule);
+        const newSchedule = await scheduleService.getScheduleBy('new', 'none', '');
+
         if (typeof newSchedule !== 'string') {
             await ctx.editMessageText(
-                `🧑Хотите отправить всем пользователям уведомления о ${icons['new']} следующем расписании ${newSchedule.title}? Сначала проверьте правильность его отображения в основном боте хотя-бы для нескольких параметров 🥺`, {
+                `🧑Хотите отправить всем пользователям уведомления о следующем расписании ${icons['new']} ${newSchedule.weekTitle}? Сначала проверьте правильность его отображения в основном боте хотя-бы для нескольких параметров 🥺`, {
                     reply_markup: new InlineKeyboard()
                         .text('✅ Да', 'notification')
                         .text('❌ Нет', 'menu'),
