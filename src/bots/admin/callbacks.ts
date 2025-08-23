@@ -91,6 +91,20 @@ ${icons['old']} - Старое расписание, нигде не отобр�
         await ctx.answerCallbackQuery();
     });
 
+    bot.callbackQuery(/page_(position|delete)_\d+/, async (ctx) => {
+        const data = ctx.callbackQuery.data;
+        const regex = /^page_(position|delete)_(.+)$/;
+        const match = data.match(regex);
+
+        if (!match) return;
+
+        const event = match[1] as 'position' | 'delete';
+        const page = Number(match[2].trim());
+
+        await showWeekTitleList(ctx, page, event);
+        await ctx.answerCallbackQuery();
+    });
+
     bot.callbackQuery(/position_.+/, async (ctx) => {
         const data = ctx.callbackQuery.data;
         const [, position, weekId] = data.split('_');
@@ -100,19 +114,6 @@ ${icons['old']} - Старое расписание, нигде не отобр�
         await ctx.editMessageText('Статус успешно изменен', {
             reply_markup: new InlineKeyboard().text('🔙 Назад', `menu`),
         });
-        await ctx.answerCallbackQuery();
-    });
-
-    bot.callbackQuery(/page_(position|delete)_\d+/, async (ctx) => {
-        const data = ctx.callbackQuery.data;
-        const regex = /^page_(position|delete)_(.+)$/;
-        const match = data.match(regex);
-        if (!match) return;
-
-        const event = match[1] as 'position' | 'delete';
-        const page = Number(match[2].trim());
-
-        await showWeekTitleList(ctx, page, event);
         await ctx.answerCallbackQuery();
     });
 }

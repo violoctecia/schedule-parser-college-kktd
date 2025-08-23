@@ -41,7 +41,7 @@ export function listKb<T extends { position: SchedulePosition }>(
     const navKeyboard = new InlineKeyboard();
     if (page > 0) navKeyboard.text('⬅️ Назад', `page_${event}_${page - 1}`);
     if (end < items.length) navKeyboard.text('Вперед ➡️', `page_${event}_${page + 1}`);
-    navKeyboard.text('🔙 Главное меню', `menu`);
+    navKeyboard.row().text('🔙 Главное меню', `menu`);
 
     kb.append(navKeyboard);
 

@@ -141,7 +141,7 @@ class TableService {
 
         const str = value.toString().trim();
 
-        if (!str || str === '\'') {
+        if (!str || str === "'") {
             return { normalizedValue: '', id: '' };
         }
 
@@ -261,7 +261,7 @@ class TableService {
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
                 teacherKey = await this.setIdToTeacher(teacher);
                 audience = this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '';
-                if (audience === subgroup1Lesson?.value) audience = ''
+                if (audience === subgroup1Lesson?.value) audience = '';
                 audienceKey = await this.setId(audience, 'audience');
 
                 lesson.teacher = teacher;
@@ -279,7 +279,7 @@ class TableService {
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
                 teacherKey = await this.setIdToTeacher(teacher);
                 audience = this.cellInfo(`${group.startCol}${row}`, 1, 0)?.value || '';
-                if (audience === subgroup1Lesson?.value) audience = ''
+                if (audience === subgroup1Lesson?.value) audience = '';
                 audienceKey = await this.setId(audience, 'audience');
 
                 const lesson1: Lesson = {
@@ -302,7 +302,7 @@ class TableService {
                 teacher = this.cellInfo(`${group.startCol}${row}`, 2, 1)?.value || '';
                 teacherKey = await this.setIdToTeacher(teacher);
                 audience = this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '';
-                if (audience === subgroup2Lesson?.value) audience = ''
+                if (audience === subgroup2Lesson?.value) audience = '';
                 audienceKey = await this.setId(audience, 'audience');
 
                 const lesson2: Lesson = {
