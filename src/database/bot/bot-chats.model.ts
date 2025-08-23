@@ -9,7 +9,7 @@ const selectedScheduleSchema = new Schema(
         normalizedValue: { type: String, required: true },
         key: { type: String, required: true },
     },
-    { _id: false }
+    { _id: false },
 );
 
 const botChatSchema = new Schema<IBotChat>({

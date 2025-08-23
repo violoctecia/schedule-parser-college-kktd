@@ -1,11 +1,10 @@
 import { Bot, InlineKeyboard } from 'grammy';
-import tableService from '@/src/services/table.service.js';
+import { tableService } from '@/src/services/table.service.js';
 import { cfg } from '@/src/config.js';
 import { registerAdminCallbacks } from '@/src/bots/admin/callbacks.js';
 import { mainKeyboard } from '@/src/bots/admin/keyboards/main.kb.js';
 import { icons } from '@/src/bots/admin/icons.js';
 import cron from 'node-cron';
-
 
 export const bot = new Bot(cfg.botAdminToken);
 
@@ -26,9 +25,7 @@ bot.command('start', async (ctx) => {
         return;
     }
 
-    await ctx.reply(
-        `🧑‍💻 Добро пожаловать администратор ${ctx.from?.username}`, mainKeyboard,
-    );
+    await ctx.reply(`🧑‍💻 Добро пожаловать администратор ${ctx.from?.username}`, mainKeyboard);
 });
 
 bot.on('message:document', async (ctx) => {
@@ -55,12 +52,13 @@ bot.on('message:document', async (ctx) => {
         }
 
         const kb = new InlineKeyboard();
-        kb.text('Настроить статус ', `select_position_${result.weekTitleId}`)
-            .text('Позже', 'menu');
+        kb.text('Настроить статус ', `select_position_${result.weekTitleId}`).text('Позже', 'menu');
 
-        await ctx.reply(`👍 Файл успешно загружен, хотите установить для него статус ${icons['new']} нового расписания?\n\n
+        await ctx.reply(
+            `👍 Файл успешно загружен, хотите установить для него статус ${icons['new']} нового расписания?\n\n
 *Статус нового расписания дает пользователям основного бота переключаться на него нажатием на кнопку "Следующее расписание".`,
-            { reply_markup: kb });
+            { reply_markup: kb },
+        );
     } catch (err) {
         console.error('Ошибка при загрузке файла:', err);
         await ctx.reply(`❌ Не удалось загрузить файл: ${err}.`, mainKeyboard);
@@ -89,7 +87,6 @@ export function startAdminBot() {
 
     // Каждый вечер субботы в 20:00 по МСК
     cron.schedule('0 20 * * 6', async () => {
-
         await notifyAdmins('📢 Напоминание: не пора ли сменить активное расписание?');
     });
 }

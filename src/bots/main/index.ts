@@ -4,7 +4,6 @@ import { cfg } from '@/src/config.js';
 import { registerCallbacks } from '@/src/bots/main/callbacks.js';
 import { handleManualInput } from '@/src/bots/main/utils/manual-input.js';
 import { notifyAdmins } from '@/src/bots/admin/index.js';
-import { botChatsService } from '@/src/database/bot/bot-chats.service.js';
 import { selectTypeKb } from '@/src/bots/main/keyboards/select-type.kb.js';
 
 export const bot = new Bot<UserContext>(cfg.botToken);
@@ -34,7 +33,6 @@ bot.command('start', async (ctx) => {
     await ctx.reply('Выберите тип расписания: группа / преподаватель', kb);
 });
 
-
 bot.on('message:text', async (ctx) => {
     if (ctx.session.isSelecting && ctx.session.currentSchedule?.type) {
         const userValue = ctx.message.text.trim().toString();
@@ -47,14 +45,9 @@ bot.on('my_chat_member', async (ctx) => {
     const chatId = ctx.chat.id;
 
     if (status === 'member' || status === 'administrator') {
-        try {
-            await ctx.api.sendMessage(
-                chatId,
-                '👋 Всем привет! \nБот может автоматически присылать новые расписания в этот чат, нужно лишь выбрать нужный параметр для этого чата.\n\n Назначить параметр всегда можно командой /start',
-            );
-        } catch (e) {
-
-        }
+        await ctx.reply(
+            '👋 Всем привет! \nБот может автоматически присылать новые расписания в этот чат, нужно лишь выбрать нужный параметр для этого чата.\n\n Назначить параметр всегда можно командой /start',
+        );
     }
 
     if (status === 'kicked' || status === 'left') {

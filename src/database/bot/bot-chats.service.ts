@@ -2,7 +2,6 @@ import { BotChatsModel } from '@/src/database/bot/bot-chats.model.js';
 import { BotChat, UserContext } from '@/src/types/bot.js';
 
 export const botChatsService = {
-
     async synchronize(ctx: UserContext): Promise<BotChat | null> {
         if (!ctx.chatId || !ctx.chat) return null;
 
@@ -52,10 +51,10 @@ export const botChatsService = {
                 $set: {
                     schedule: ctx.session.rememberedSchedule
                         ? {
-                            type: ctx.session.rememberedSchedule.type,
-                            normalizedValue: ctx.session.rememberedSchedule.normalizedValue,
-                            key: ctx.session.rememberedSchedule.key,
-                        }
+                              type: ctx.session.rememberedSchedule.type,
+                              normalizedValue: ctx.session.rememberedSchedule.normalizedValue,
+                              key: ctx.session.rememberedSchedule.key,
+                          }
                         : null,
                 },
             },
@@ -65,5 +64,5 @@ export const botChatsService = {
 
     async getAll(): Promise<BotChat[]> {
         return BotChatsModel.find().lean();
-    }
+    },
 };

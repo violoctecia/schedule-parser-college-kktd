@@ -23,14 +23,12 @@ class CacheService {
         if (this.cacheLists.has(type)) {
             return this.cacheLists.get(type)!;
         }
-        let data: List = await keysService.findAllByType(type);
+        const data: List = await keysService.findAllByType(type);
         this.cacheLists.set(type, data);
         return data;
     }
 
-    async getImage(type: ScheduleType,
-                   value: string,
-                   position: SchedulePosition): Promise<{ buffers: Buffer[]; weekTitle: string } | null> {
+    async getImage(type: ScheduleType, value: string, position: SchedulePosition): Promise<{ buffers: Buffer[]; weekTitle: string } | null> {
         const buffers: Buffer[] = [];
         let weekTitle: string | null = null;
         let idx = 1;
@@ -105,10 +103,7 @@ class CacheService {
 
     private splitSchedule(schedule: Schedule, maxLessonsPerPart: number = 22): Schedule[] {
         const days = Object.entries(schedule);
-        const totalLessons = days.reduce(
-            (acc, [, dayLessons]) => acc + Object.values(dayLessons).reduce((a, l) => a + l.length, 0),
-            0,
-        );
+        const totalLessons = days.reduce((acc, [, dayLessons]) => acc + Object.values(dayLessons).reduce((a, l) => a + l.length, 0), 0);
 
         const partsCount = Math.ceil(totalLessons / maxLessonsPerPart);
         const targetPerPart = Math.ceil(totalLessons / partsCount);
@@ -140,5 +135,3 @@ class CacheService {
 }
 
 export const cacheService = new CacheService();
-
-

@@ -23,7 +23,6 @@ export function listKb<T extends { position: SchedulePosition }>(
     }
 
     for (let i = 0; i < pageItems.length; i += 2) {
-
         const item1 = pageItems[i];
         const label1 = icons[item1.position] + ' ' + getLabel(item1);
         const value1 = getValue(item1);
@@ -33,9 +32,7 @@ export function listKb<T extends { position: SchedulePosition }>(
             const label2 = icons[item2.position] + ' ' + getLabel(item2);
             const value2 = getValue(item2);
 
-            kb.text(label1, `select_${event}_${value1}`)
-                .text(label2, `select_${event}_${value2}`)
-                .row();
+            kb.text(label1, `select_${event}_${value1}`).text(label2, `select_${event}_${value2}`).row();
         } else {
             kb.text(label1, `select_${event}_${value1}`).row();
         }
@@ -50,4 +47,3 @@ export function listKb<T extends { position: SchedulePosition }>(
 
     return kb;
 }
-

@@ -4,8 +4,8 @@ import { ScheduleType } from '@/src/types/schedule.js';
 export type ScheduleInfo = {
     type: ScheduleType;
     normalizedValue?: string; // нормализованное значение
-    key?: string;           // ID ключа
-}
+    key?: string; // ID ключа
+};
 
 export interface UserSessionData {
     isSelecting: boolean;

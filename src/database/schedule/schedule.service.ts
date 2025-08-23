@@ -3,15 +3,12 @@ import { Lesson, Schedule, SchedulePosition, WeekLessons } from '@/src/types/sch
 import { cacheService } from '@/src/services/cache.service.js';
 
 export const scheduleService = {
-
     async create(data: WeekLessons) {
         await WeekScheduleModel.findOneAndUpdate(
             { weekTitle: data.weekTitle },
-            data,
-            { upsert: true, new: true }
+            { $set: data }, // перезаписывает весь объект
+            { upsert: true, new: true },
         );
-
-        return `✅ Schedule for week ${data.weekTitle} created/updated`;
     },
 
     async delete(weekTitleId: string) {
@@ -20,28 +17,26 @@ export const scheduleService = {
         return res;
     },
 
-    async getScheduleBy(position: SchedulePosition, param: 'teacherId' | 'groupId' | 'audienceId' | 'none', value: string): Promise<Schedule | string | {weekTitle: string}> {
+    async getScheduleBy(position: SchedulePosition, param: 'teacherId' | 'groupId' | 'audienceId' | 'none', value: string): Promise<Schedule | string | { weekTitle: string }> {
         const allowedParams = ['teacherId', 'groupId', 'audienceId', 'none'];
 
         if (!allowedParams.includes(param)) {
             return `❌ Invalid param ${param}`;
         }
 
-        let weekSchedule = await WeekScheduleModel.findOne({ position });
+        const weekSchedule = await WeekScheduleModel.findOne({ position });
         if (!weekSchedule) {
             return `❌ WeekSchedule with position ${position} not found`;
         }
         if (param === 'none') {
-            return {weekTitle: weekSchedule.weekTitle}
+            return { weekTitle: weekSchedule.weekTitle };
         }
 
-        const filteredLessons = weekSchedule!.lessons.filter(
-            lesson => lesson[param] === value,
-        );
+        const filteredLessons = weekSchedule!.lessons.filter((lesson) => lesson[param] === value);
 
         const grouped: Schedule = {};
 
-        filteredLessons.forEach(lesson => {
+        filteredLessons.forEach((lesson) => {
             if (!grouped[lesson.day]) {
                 grouped[lesson.day] = {};
             }
@@ -55,11 +50,11 @@ export const scheduleService = {
             dayObj[lesson.number].push(lesson);
         });
 
-        Object.keys(grouped).forEach(day => {
+        Object.keys(grouped).forEach((day) => {
             const sortedByNumber: Record<number, Lesson[]> = {};
             Object.keys(grouped[day])
                 .sort((a, b) => Number(a) - Number(b))
-                .forEach(num => {
+                .forEach((num) => {
                     sortedByNumber[Number(num)] = grouped[day][Number(num)];
                 });
             grouped[day] = sortedByNumber;
@@ -67,13 +62,13 @@ export const scheduleService = {
 
         if (param !== 'groupId') {
             const dayOrderMap: Record<string, number> = {
-                'понедельник': 1,
-                'вторник': 2,
-                'среда': 3,
-                'четверг': 4,
-                'пятница': 5,
-                'суббота': 6,
-                'воскресенье': 7,
+                понедельник: 1,
+                вторник: 2,
+                среда: 3,
+                четверг: 4,
+                пятница: 5,
+                суббота: 6,
+                воскресенье: 7,
             };
 
             function getDayOrderKey(dayWithDate: string): number {
@@ -84,7 +79,7 @@ export const scheduleService = {
             const ordered: Schedule = {};
             Object.keys(grouped)
                 .sort((a, b) => getDayOrderKey(a) - getDayOrderKey(b))
-                .forEach(day => {
+                .forEach((day) => {
                     ordered[day] = grouped[day];
                 });
             return ordered;
@@ -114,11 +109,10 @@ export const scheduleService = {
 
     async getAllScheduleTitles() {
         const docs = await WeekScheduleModel.find();
-        return docs.map(doc => ({
+        return docs.map((doc) => ({
             weekTitle: doc.weekTitle,
             weekTitleId: doc.weekTitleId,
             position: doc.position,
         }));
     },
-
 };

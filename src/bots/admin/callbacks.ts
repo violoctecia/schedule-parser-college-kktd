@@ -7,10 +7,8 @@ import { SchedulePosition } from '@/src/types/schedule.js';
 import { sendNextSchedule } from '@/src/bots/main/utils/notification.js';
 
 export function registerAdminCallbacks(bot: Bot) {
-
     bot.callbackQuery('menu', async (ctx) => {
-        await ctx.editMessageText(
-            `🧑‍💻 Главное меню`, mainKeyboard);
+        await ctx.editMessageText(`🧑‍💻 Главное меню`, mainKeyboard);
         await ctx.answerCallbackQuery();
     });
 
@@ -19,14 +17,16 @@ export function registerAdminCallbacks(bot: Bot) {
 
         if (typeof newSchedule !== 'string') {
             await ctx.editMessageText(
-                `🧑Хотите отправить всем пользователям уведомления о следующем расписании ${icons['new']} ${newSchedule.weekTitle}? Сначала проверьте правильность его отображения в основном боте хотя-бы для нескольких параметров 🥺`, {
-                    reply_markup: new InlineKeyboard()
-                        .text('✅ Да', 'notification')
-                        .text('❌ Нет', 'menu'),
-                });
+                `🧑Хотите отправить всем пользователям уведомления о следующем расписании ${icons['new']} ${newSchedule.weekTitle}? Сначала проверьте правильность его отображения в основном боте хотя-бы для нескольких параметров 🥺`,
+                {
+                    reply_markup: new InlineKeyboard().text('✅ Да', 'notification').text('❌ Нет', 'menu'),
+                },
+            );
         } else {
             await ctx.editMessageText(
-                `Не найдено ни одного расписания со статусом ${icons['new']} "Новое расписание". Сначала установите статус нажав на кнопку "Настроить статус`, mainKeyboard);
+                `Не найдено ни одного расписания со статусом ${icons['new']} "Новое расписание". Сначала установите статус нажав на кнопку "Настроить статус`,
+                mainKeyboard,
+            );
         }
 
         await ctx.answerCallbackQuery();
@@ -39,10 +39,9 @@ export function registerAdminCallbacks(bot: Bot) {
     });
 
     bot.callbackQuery('upload_schedule', async (ctx) => {
-        await ctx.editMessageText(
-            `Пришлите мне новый файл с расписанием`, {
-                reply_markup: new InlineKeyboard().text('🔙 Назад', 'menu'),
-            });
+        await ctx.editMessageText(`Пришлите мне новый файл с расписанием`, {
+            reply_markup: new InlineKeyboard().text('🔙 Назад', 'menu'),
+        });
         await ctx.answerCallbackQuery();
     });
 
@@ -51,8 +50,8 @@ export function registerAdminCallbacks(bot: Bot) {
         const [, event] = data.split('_');
 
         const texts = {
-            'delete': 'Выберите расписание из списка для удаления.',
-            'position': 'Выберите расписание из списка для изменения его статуса.',
+            delete: 'Выберите расписание из списка для удаления.',
+            position: 'Выберите расписание из списка для изменения его статуса.',
         };
 
         const appendedText = `\n
@@ -72,21 +71,23 @@ ${icons['old']} - Старое расписание, нигде не отобр�
         const [, event, weekId] = data.split('_');
 
         switch (event) {
-            case 'position':
+            case 'position': {
                 await ctx.editMessageText('Выберите статус', {
                     reply_markup: new InlineKeyboard()
                         .text(`${icons['new']} Новое`, `position_new_${weekId}`)
                         .text(`${icons['current']} Текущее`, `position_current_${weekId}`)
-                        .text(`${icons['old']} Старое`, `position_old_${weekId}`).row()
+                        .text(`${icons['old']} Старое`, `position_old_${weekId}`)
+                        .row()
                         .text('🔙 Назад', `menu`),
                 });
                 break;
-            case 'delete':
-                const res = await scheduleService.delete(weekId);
+            }
+            case 'delete': {
+                await scheduleService.delete(weekId);
                 await showWeekTitleList(ctx, 0, event);
                 break;
+            }
         }
-
         await ctx.answerCallbackQuery();
     });
 
@@ -97,12 +98,10 @@ ${icons['old']} - Старое расписание, нигде не отобр�
         await scheduleService.setSchedulePosition(weekId, position as SchedulePosition);
 
         await ctx.editMessageText('Статус успешно изменен', {
-            reply_markup: new InlineKeyboard()
-                .text('🔙 Назад', `menu`),
+            reply_markup: new InlineKeyboard().text('🔙 Назад', `menu`),
         });
         await ctx.answerCallbackQuery();
     });
-
 
     bot.callbackQuery(/page_(position|delete)_\d+/, async (ctx) => {
         const data = ctx.callbackQuery.data;

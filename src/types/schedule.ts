@@ -25,7 +25,7 @@ export type Lesson = {
 
     group: string;
     groupId: string;
-}
+};
 
 export type SchedulePosition = 'current' | 'new' | 'old' | 'unset';
 
@@ -34,10 +34,9 @@ export type WeekLessons = {
     weekTitle: string;
     weekTitleId: string;
     position: SchedulePosition;
-}
+};
 
 export type ScheduleType = 'group' | 'teacher' | 'audience';
 
-export type DayLessons = Record<number, Lesson[]>
-export type Schedule = Record<string, DayLessons>
-
+export type DayLessons = Record<number, Lesson[]>;
+export type Schedule = Record<string, DayLessons>;

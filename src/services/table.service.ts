@@ -14,18 +14,18 @@ const startPoints = {
     weekName: 'A6',
 };
 
-const tableService = {
-    table: {} as TableData,
-    mergedMap: new Map() as MergeMap,
-    merges: [] as XLSX.Range[],
+class TableService {
+    private table: TableData = {};
+    private mergedMap: MergeMap = new Map();
+    private merges: XLSX.Range[] = [];
 
-    groups: [] as CellInfo[],
-    days: [] as CellInfo[],
-    weekTitle: '',
+    private groups: CellInfo[] = [];
+    private days: CellInfo[] = [];
+    private weekTitle = '';
 
-    teacherKeys: [] as Key[],
-    groupsKeys: [] as Key[],
-    audienceKeys: [] as Key[],
+    private teacherKeys: Key[] = [];
+    private groupsKeys: Key[] = [];
+    private audienceKeys: Key[] = [];
 
     async load(filePath?: string, buffer?: Buffer): Promise<Omit<WeekLessons, 'lessons'> | string> {
         console.log('✅ Start loading table', filePath ? 'from file' : 'from buffer');
@@ -75,9 +75,9 @@ const tableService = {
         this.weekTitle = this.cellInfo(startPoints.weekName, 0, 0)?.value || formatter.format(now);
 
         return await this.fullParse();
-    },
+    }
 
-    cellInfo(address: string, colOffset = 0, rowOffset = 0): CellInfo | null {
+    private cellInfo(address: string, colOffset = 0, rowOffset = 0): CellInfo | null {
         const cell = XLSX.utils.decode_cell(address);
         cell.c = Math.max(0, cell.c + colOffset);
         cell.r = Math.max(0, cell.r + rowOffset);
@@ -94,10 +94,7 @@ const tableService = {
         let startRow = 0;
 
         for (const merge of this.merges) {
-            if (
-                cell.c >= merge.s.c && cell.c <= merge.e.c &&
-                cell.r >= merge.s.r && cell.r <= merge.e.r
-            ) {
+            if (cell.c >= merge.s.c && cell.c <= merge.e.c && cell.r >= merge.s.r && cell.r <= merge.e.r) {
                 startAddress = XLSX.utils.encode_cell(merge.s);
                 endAddress = XLSX.utils.encode_cell(merge.e);
 
@@ -113,9 +110,9 @@ const tableService = {
         }
 
         return { value, startAddress, endAddress, startCol, startRow };
-    },
+    }
 
-    findGroups() {
+    private findGroups() {
         let currentColOffset = 0;
 
         while (true) {
@@ -124,9 +121,9 @@ const tableService = {
             this.groups.push(newGroup);
             currentColOffset += 5;
         }
-    },
+    }
 
-    findDays() {
+    private findDays() {
         let currentPoint = startPoints.weekDays;
 
         while (true) {
@@ -135,35 +132,32 @@ const tableService = {
             this.days.push(newDay);
             currentPoint = newDay.endAddress;
         }
-    },
+    }
 
-    async setId(value: unknown, type: Exclude<ScheduleType, 'teacher'>): Promise<Key> {
+    private async setId(value: unknown, type: Exclude<ScheduleType, 'teacher'>): Promise<Key> {
         if (typeof value !== 'string' && typeof value !== 'number') {
             return { normalizedValue: '', id: '' };
         }
 
-        let str = value.toString().trim();
+        const str = value.toString().trim();
 
-
-        if (!str || str === '\'') {
+        if (!str || str === "'") {
             return { normalizedValue: '', id: '' };
         }
 
         const newKey: Key = {
             normalizedValue: str,
-            id: str.toLowerCase()
+            id: str
+                .toLowerCase()
                 .replace(/[^a-zа-я0-9]/gi, '')
                 .slice(0, 16),
         };
 
-        if (newKey.id === 'м3' || newKey.id === 'мз') newKey.id = 'мз'
+        if (newKey.id === 'м3' || newKey.id === 'мз') newKey.id = 'мз';
 
-        const keysArray =
-            type === 'group'
-                ? this.groupsKeys
-                : this.audienceKeys;
+        const keysArray = type === 'group' ? this.groupsKeys : this.audienceKeys;
 
-        const foundExact = keysArray.find(i => i.id === newKey.id);
+        const foundExact = keysArray.find((i) => i.id === newKey.id);
         if (foundExact) return foundExact;
 
         const res = await keysService.createKey(newKey.normalizedValue, newKey.id, type);
@@ -174,16 +168,16 @@ const tableService = {
         }
 
         return newKey;
-    },
+    }
 
-    async setIdToTeacher(teacherOriginalName: string): Promise<Key> {
+    private async setIdToTeacher(teacherOriginalName: string): Promise<Key> {
         if (!teacherOriginalName) return { normalizedValue: '', id: '' };
         const newKey: Key = {
             normalizedValue: normalizeTeacher(teacherOriginalName, true),
             id: normalizeTeacher(teacherOriginalName),
         };
 
-        const foundExact = this.teacherKeys.find(i => i.id === newKey.id);
+        const foundExact = this.teacherKeys.find((i) => i.id === newKey.id);
         if (foundExact) return foundExact;
 
         const res = await keysService.createKey(newKey.normalizedValue, newKey.id, 'teacher');
@@ -194,9 +188,9 @@ const tableService = {
         }
 
         return newKey;
-    },
+    }
 
-    async parseDayLessonsFromGroup(day: CellInfo, group: CellInfo) {
+    private async parseDayLessonsFromGroup(day: CellInfo, group: CellInfo) {
         const lessons: Lesson[] = [];
         const groupKey = await this.setId(group.value, 'group');
 
@@ -303,7 +297,6 @@ const tableService = {
                 };
                 if (subgroup1Lesson?.value) lessons.push(lesson1);
 
-
                 teacher = this.cellInfo(`${group.startCol}${row}`, 2, 1)?.value || '';
                 teacherKey = await this.setIdToTeacher(teacher);
                 audience = this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '';
@@ -328,9 +321,9 @@ const tableService = {
             }
         }
         return lessons;
-    },
+    }
 
-    async fullParse(): Promise<Omit<WeekLessons, 'lessons'>> {
+    private async fullParse(): Promise<Omit<WeekLessons, 'lessons'>> {
         this.teacherKeys = await keysService.findAllByType('teacher');
         this.groupsKeys = await keysService.findAllByType('group');
         this.audienceKeys = await keysService.findAllByType('audience');
@@ -340,9 +333,7 @@ const tableService = {
 
         const lessons = [];
 
-        const pairs = this.groups.flatMap(group =>
-            this.days.map(day => ({ group, day })),
-        );
+        const pairs = this.groups.flatMap((group) => this.days.map((day) => ({ group, day })));
         for (const { group, day } of pairs) {
             const dayLessons = await this.parseDayLessonsFromGroup(day, group);
             lessons.push(...dayLessons);
@@ -352,21 +343,30 @@ const tableService = {
             weekTitle: this.weekTitle,
             weekTitleId: this.weekTitle.toLowerCase().replace(/[\s.-]/g, ''),
             lessons,
-            position: 'unset'
+            position: 'unset',
         };
 
-        const result = await scheduleService.create(weekLessons);
-        console.log(result);
-
+        await scheduleService.create(weekLessons);
         cacheService.clear();
+
+        this.table = {};
+        this.mergedMap.clear();
+        this.merges = [];
+
+        this.groups = [];
+        this.days = [];
+        this.weekTitle = '';
+
+        this.teacherKeys = [];
+        this.groupsKeys = [];
+        this.audienceKeys = [];
 
         return {
             weekTitle: weekLessons.weekTitle,
             weekTitleId: weekLessons.weekTitleId,
-            position: weekLessons.position
+            position: weekLessons.position,
         };
+    }
+}
 
-    },
-};
-
-export default tableService;
+export const tableService = new TableService();

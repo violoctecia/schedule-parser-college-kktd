@@ -13,7 +13,7 @@ export async function sendNextSchedule() {
 
     for (const chat of chats) {
         total++;
-        let kb = new InlineKeyboard();
+        const kb = new InlineKeyboard();
         const chatId = chat.chatId;
 
         const schedule = chat.schedule;
@@ -23,21 +23,17 @@ export async function sendNextSchedule() {
             const images = await cacheService.getImage(schedule.type, schedule.key, 'new');
 
             if (images) {
-                const mediaGroup = images.buffers.map(buf => ({
+                const mediaGroup = images.buffers.map((buf) => ({
                     type: 'photo' as const,
                     media: new InputFile(buf),
                     parse_mode: 'HTML' as const,
                 }));
                 try {
                     await bot.api.sendMediaGroup(chatId, mediaGroup);
-                    await bot.api.sendMessage(
-                        chatId,
-                        `☝️ Новое расписание ${images.weekTitle}`,
-                        isGroupChat ? {} : { reply_markup: kb.text('🏠 Меню', 'home') }
-                    );
+                    await bot.api.sendMessage(chatId, `☝️ Новое расписание ${images.weekTitle}`, isGroupChat ? {} : { reply_markup: kb.text('🏠 Меню', 'home') });
                     success++;
-                } catch (e: any) {
-                    console.log(`❌ Ошибка при отправке в чат ${chatId}`, e.description ?? e);
+                } catch (e) {
+                    console.log(`❌ Ошибка при отправке в чат ${chatId}`, e);
                     failed++;
                     failedChats.push(chatId);
                 }

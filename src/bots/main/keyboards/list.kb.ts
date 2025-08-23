@@ -1,15 +1,7 @@
 import { InlineKeyboard } from 'grammy';
 import { ScheduleType } from '@/src/types/schedule.js';
 
-export function listKb<T>(
-    type: ScheduleType,
-    items: T[],
-    page: number,
-    pageSize: number,
-    getLabel: (item: T) => string,
-    getValue: (item: T) => string,
-    isGroupChat: boolean
-) {
+export function listKb<T>(type: ScheduleType, items: T[], page: number, pageSize: number, getLabel: (item: T) => string, getValue: (item: T) => string, isGroupChat: boolean) {
     const start = page * pageSize;
     const end = start + pageSize;
     const pageItems = items.slice(start, end);
@@ -24,9 +16,7 @@ export function listKb<T>(
             const label2 = getLabel(pageItems[i + 1]);
             const value2 = getValue(pageItems[i + 1]);
 
-            kb.text(label1, `select_${type}_${value1}`)
-                .text(label2, `select_${type}_${value2}`)
-                .row();
+            kb.text(label1, `select_${type}_${value1}`).text(label2, `select_${type}_${value2}`).row();
         } else {
             kb.text(label1, `select_${type}_${value1}`).row();
         }

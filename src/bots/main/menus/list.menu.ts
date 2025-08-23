@@ -4,13 +4,7 @@ import { cacheService } from '@/src/services/cache.service.js';
 import { ScheduleType } from '@/src/types/schedule.js';
 import { Key } from '@/src/types/keys.js';
 
-export async function listTypeMenu(
-    ctx: UserContext,
-    page = 0,
-    type: ScheduleType,
-    text?: string,
-    isNewMessage: boolean = false
-) {
+export async function listTypeMenu(ctx: UserContext, page = 0, type: ScheduleType, text?: string, isNewMessage: boolean = false) {
     const list = await cacheService.getList(type);
     const isGroupChat = ctx.chat?.type !== 'private';
 
@@ -37,16 +31,16 @@ export async function listTypeMenu(
         sorted,
         page,
         6,
-        item => item.normalizedValue,
-        item => item.id,
-        isGroupChat
+        (item) => item.normalizedValue,
+        (item) => item.id,
+        isGroupChat,
     );
 
     if (isNewMessage && text) {
         await ctx.reply(text, {
             reply_markup: keyboard,
         });
-        return
+        return;
     }
 
     if (text) {
@@ -57,6 +51,5 @@ export async function listTypeMenu(
         await ctx.editMessageReplyMarkup({
             reply_markup: keyboard,
         });
-
     }
 }

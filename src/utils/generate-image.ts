@@ -4,8 +4,6 @@ import { Lesson, Schedule, ScheduleType, DayLessons } from '@/src/types/schedule
 import { formatText } from '@/src/utils/format-text.js';
 import { getTimeForLesson } from '@/src/utils/lesson-time.js';
 
-
-
 const cfg = {
     backgroundColor: '#dedede',
     dayBackgroundColor: '#fffffd',
@@ -21,10 +19,8 @@ function calcDayHeight(day: DayLessons) {
 
     const numbersOfLessons = Object.keys(day).map(Number);
     numbersOfLessons.forEach((key) => {
-
-
         const lessons = day[key];
-        lessons.forEach((lesson) => {
+        lessons.forEach(() => {
             height += 16; // предмет + подгруппа
             height += 2;
             height += 14; // преподаватель / группа
@@ -80,6 +76,7 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
         return totalHeight + 30 + 10;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     function getFirstValue(obj: Record<any, any>) {
         return obj[Object.keys(obj)[0]];
     }
@@ -108,10 +105,8 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
     setText(ctx, '12px Arial', cfg.secondTextColor, 'start', 'top');
     ctx.fillText(getFirstValue(getFirstValue(data))[0].weekTitle, 20 + titleParamWidth, 10);
 
-
     setText(ctx, '12px Arial', cfg.secondTextColor, 'right');
     ctx.fillText('Ауд.', baseWidth - 30, 35); // аудитория
-
 
     function generateLessons(lessons: Lesson[], numberOfLesson: number, startY: number): number {
         let currentY = startY;
@@ -125,13 +120,12 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
         ctx.fillText(numberOfLesson.toString() + '.', 40, currentY); // номер пары
 
         lessons.forEach((lesson, index) => {
-
             setText(ctx, '16px Arial', cfg.textColor, 'start');
             ctx.fillText(`${lesson.name}${lesson.subgroup ? ` - ${lesson.subgroup} подгруппа` : ''}`, 110, currentY - 1, baseWidth - 66 - 90); // предмет + подгруппа
 
             currentY += 0.5;
             setText(ctx, '14px Arial', cfg.secondTextColor, 'right');
-            ctx.fillText(lesson.audience === '\'' ? ' ' : lesson.audience || ' ', baseWidth - 30, currentY); // аудитория
+            ctx.fillText(lesson.audience === "'" ? ' ' : lesson.audience || ' ', baseWidth - 30, currentY); // аудитория
 
             currentY += 16;
 
@@ -145,11 +139,9 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
             setText(ctx, '14px Arial', cfg.secondTextColor, 'start');
             ctx.fillText(lesson.teacher, 110 + groupWidth, currentY); // группа / преподователь
 
-
             if (index < lessons.length - 1) {
                 currentY += 18;
             }
-
         });
 
         return currentY + 8 + 14;
@@ -163,19 +155,10 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
         const lessonsKeys = Object.keys(day).map(Number);
         const dayHeight = calcDayHeight(day);
 
-        drawRoundedRect(
-            ctx,
-            20,
-            currentY,
-            baseWidth - 40,
-            dayHeight,
-            cfg.borderRadius,
-            cfg.dayBackgroundColor,
-        );
+        drawRoundedRect(ctx, 20, currentY, baseWidth - 40, dayHeight, cfg.borderRadius, cfg.dayBackgroundColor);
 
         let newY = currentY + 8;
         lessonsKeys.forEach((key, index) => {
-
             if (day[key][0].isFullDay) {
                 currentY += 12;
                 setText(ctx, '14px Arial', cfg.secondTextColor, 'center');
@@ -195,7 +178,6 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
             }
 
             newY += 8;
-
         });
 
         return dayHeight + 24 + 8;

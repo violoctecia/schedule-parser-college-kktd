@@ -10,11 +10,11 @@ import { listTypeMenu } from '@/src/bots/main/menus/list.menu.js';
 export async function handleManualInput(ctx: UserContext, type: ScheduleType, value: string) {
     const list = await cacheService.getList(type);
 
-    const listValues = list.map(o => o.normalizedValue);
-    const listIds = list.map(o => o.id);
+    const listValues = list.map((o) => o.normalizedValue);
+    const listIds = list.map((o) => o.id);
 
     if (listValues.includes(value)) {
-        const id = list.find(o => o.normalizedValue === value)?.id;
+        const id = list.find((o) => o.normalizedValue === value)?.id;
         if (!id) return;
         await sendSchedule(ctx, type, id, 'current', false);
     } else {
@@ -25,25 +25,25 @@ export async function handleManualInput(ctx: UserContext, type: ScheduleType, va
     }
 
     async function returnClosest(stringList: string[], value: string) {
-        let closeMatches = findClosest(stringList, value, 3);
+        const closeMatches = findClosest(stringList, value, 3);
 
         const texts = {
-            'group': 'вашу группу',
-            'teacher': 'это имя преподователя',
-            'audience': 'эту аудиторию',
+            group: 'вашу группу',
+            teacher: 'это имя преподователя',
+            audience: 'эту аудиторию',
         };
 
         if (closeMatches?.length) {
-            const filteredList = list.filter(o => closeMatches.includes(o.id));
+            const filteredList = list.filter((o) => closeMatches.includes(o.id));
 
-            let keyboard = listKb(
+            const keyboard = listKb(
                 type,
                 filteredList,
                 0,
                 6,
-                item => item.normalizedValue,
-                item => item.id,
-                false
+                (item) => item.normalizedValue,
+                (item) => item.id,
+                false,
             );
 
             await ctx.reply(
@@ -51,7 +51,13 @@ export async function handleManualInput(ctx: UserContext, type: ScheduleType, va
                 { reply_markup: keyboard },
             );
         } else {
-            await listTypeMenu(ctx, 0, type as ScheduleType, `❌ Не удалось найти ${texts[type]} и похожих вариантов в текущей таблице расписания.\n\nПопробуйте поискать среди готовых вариантов или ввести вручную еще раз.`, true);
+            await listTypeMenu(
+                ctx,
+                0,
+                type as ScheduleType,
+                `❌ Не удалось найти ${texts[type]} и похожих вариантов в текущей таблице расписания.\n\nПопробуйте поискать среди готовых вариантов или ввести вручную еще раз.`,
+                true,
+            );
         }
     }
 }

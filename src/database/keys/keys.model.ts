@@ -1,8 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { Keys } from '@/src/types/keys.js';
 
-interface IKeys extends Keys, Document {
-}
+interface IKeys extends Keys, Document {}
 
 const keysSchema = new Schema<IKeys>({
     type: { type: String, enum: ['teacher', 'group', 'audience'], required: true },

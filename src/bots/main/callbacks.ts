@@ -7,15 +7,12 @@ import { scheduleKb } from '@/src/bots/main/keyboards/schedule.kb.js';
 import { botChatsService } from '@/src/database/bot/bot-chats.service.js';
 import { selectTypeKb } from '@/src/bots/main/keyboards/select-type.kb.js';
 
-
 export function registerCallbacks(bot: Bot<UserContext>) {
-
     // Menu Select Type
     bot.callbackQuery('home', async (ctx) => {
         ctx.session.isSelecting = false;
 
-        await ctx.editMessageText('🏠 Выберите тип расписания для поиска:',
-            { reply_markup: await selectTypeKb(ctx) });
+        await ctx.editMessageText('🏠 Выберите тип расписания для поиска:', { reply_markup: await selectTypeKb(ctx) });
         await ctx.answerCallbackQuery();
     });
 
