@@ -141,7 +141,7 @@ class TableService {
 
         const str = value.toString().trim();
 
-        if (!str || str === "'") {
+        if (!str || str === '\'') {
             return { normalizedValue: '', id: '' };
         }
 
@@ -261,6 +261,7 @@ class TableService {
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
                 teacherKey = await this.setIdToTeacher(teacher);
                 audience = this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '';
+                if (audience === subgroup1Lesson?.value) audience = ''
                 audienceKey = await this.setId(audience, 'audience');
 
                 lesson.teacher = teacher;
@@ -278,6 +279,7 @@ class TableService {
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
                 teacherKey = await this.setIdToTeacher(teacher);
                 audience = this.cellInfo(`${group.startCol}${row}`, 1, 0)?.value || '';
+                if (audience === subgroup1Lesson?.value) audience = ''
                 audienceKey = await this.setId(audience, 'audience');
 
                 const lesson1: Lesson = {
@@ -295,11 +297,12 @@ class TableService {
                     day: lesson.day,
                     weekTitle: lesson.weekTitle,
                 };
-                if (subgroup1Lesson?.value) lessons.push(lesson1);
+                if (subgroup1Lesson?.value || teacher) lessons.push(lesson1);
 
                 teacher = this.cellInfo(`${group.startCol}${row}`, 2, 1)?.value || '';
                 teacherKey = await this.setIdToTeacher(teacher);
                 audience = this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '';
+                if (audience === subgroup2Lesson?.value) audience = ''
                 audienceKey = await this.setId(audience, 'audience');
 
                 const lesson2: Lesson = {
@@ -317,7 +320,7 @@ class TableService {
                     day: lesson.day,
                     weekTitle: lesson.weekTitle,
                 };
-                if (subgroup2Lesson?.value) lessons.push(lesson2);
+                if (subgroup2Lesson?.value || teacher) lessons.push(lesson2);
             }
         }
         return lessons;
