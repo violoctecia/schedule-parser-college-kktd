@@ -24,14 +24,14 @@ bot.api.config.use((prev, method, payload) =>
 );
 
 bot.command('start', async (ctx) => {
-    await botChatsService.synchronize(ctx);
+    const kb = { reply_markup: await selectTypeKb(ctx) };
 
     if (ctx.chat.type === 'private') {
-        await ctx.reply('🏠 Выберите тип расписания для поиска:', { reply_markup: selectTypeKb(ctx) });
+        await ctx.reply('🏠 Выберите тип расписания для поиска:', kb);
         return;
     }
 
-    await ctx.reply('Выберите тип расписания: группа / преподаватель', { reply_markup: selectTypeKb(ctx) });
+    await ctx.reply('Выберите тип расписания: группа / преподаватель', kb);
 });
 
 

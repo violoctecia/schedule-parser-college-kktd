@@ -1,8 +1,10 @@
 import { InlineKeyboard } from 'grammy';
 import { UserContext } from '@/src/types/bot.js';
+import { botChatsService } from '@/src/database/bot/bot-chats.service.js';
 
-export function selectTypeKb(ctx: UserContext) {
+export async function selectTypeKb(ctx: UserContext) {
     const type = ctx.chat?.type || 'private';
+    await botChatsService.synchronize(ctx);
 
     const kb = new InlineKeyboard();
 

@@ -13,10 +13,9 @@ export function registerCallbacks(bot: Bot<UserContext>) {
     // Menu Select Type
     bot.callbackQuery('home', async (ctx) => {
         ctx.session.isSelecting = false;
-        await botChatsService.synchronize(ctx);
 
         await ctx.editMessageText('🏠 Выберите тип расписания для поиска:',
-            { reply_markup: selectTypeKb(ctx) });
+            { reply_markup: await selectTypeKb(ctx) });
         await ctx.answerCallbackQuery();
     });
 
