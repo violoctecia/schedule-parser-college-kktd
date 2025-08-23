@@ -45,7 +45,7 @@ export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: 
         ctx.session.rememberedSchedule = {
             type: type,
             key: value,
-            normalizedValue: normalizedValue
+            normalizedValue: normalizedValue,
         };
         await botChatsService.setSchedule(ctx);
     }
@@ -54,12 +54,21 @@ export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: 
 
     const deleteMessage = async () => {
         if (isCallback) {
-            await ctx.deleteMessage();
+            try {
+                await ctx.deleteMessage();
+            } catch (error) {
+                console.log(error);
+            }
+
         } else {
-            await ctx.api.deleteMessage(sent!.chat.id, sent!.message_id);
+            try {
+                await ctx.api.deleteMessage(sent!.chat.id, sent!.message_id);
+            } catch (error) {
+                console.log(error);
+            }
+
         }
     };
-
 
 
     if (isCallback) {
@@ -86,7 +95,7 @@ export async function sendSchedule(ctx: UserContext, type: ScheduleType, value: 
         }));
 
     await ctx.replyWithMediaGroup(mediaGroup);
-    let text = `☝️ ${sendScheduleText[position][type]} <b>${normalizedValue}</b> ${images.weekTitle}`
+    let text = `☝️ ${sendScheduleText[position][type]} <b>${normalizedValue}</b> ${images.weekTitle}`;
 
     await ctx.reply(
         text,

@@ -5,10 +5,11 @@ import { cacheService } from '@/src/services/cache.service.js';
 export const scheduleService = {
 
     async create(data: WeekLessons) {
-        await WeekScheduleModel.deleteOne({ weekTitle: data.weekTitle });
-
-        const newData = new WeekScheduleModel(data);
-        await newData.save();
+        await WeekScheduleModel.findOneAndUpdate(
+            { weekTitle: data.weekTitle },
+            data,
+            { upsert: true, new: true }
+        );
 
         return `✅ Schedule for week ${data.weekTitle} created/updated`;
     },

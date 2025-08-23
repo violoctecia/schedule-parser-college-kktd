@@ -4,6 +4,8 @@ import { cfg } from '@/src/config.js';
 import { registerAdminCallbacks } from '@/src/bots/admin/callbacks.js';
 import { mainKeyboard } from '@/src/bots/admin/keyboards/main.kb.js';
 import { icons } from '@/src/bots/admin/icons.js';
+import cron from 'node-cron';
+
 
 export const bot = new Bot(cfg.botAdminToken);
 
@@ -83,5 +85,11 @@ export async function notifyAdmins(message: string) {
 
 export function startAdminBot() {
     bot.start();
-    console.log('✅🧑‍💻 Admin bot started');
+    console.log('✅ Admin bot started');
+
+    // Каждый вечер субботы в 20:00 по МСК
+    cron.schedule('0 20 * * 6', async () => {
+
+        await notifyAdmins('📢 Напоминание: не пора ли сменить активное расписание?');
+    });
 }
