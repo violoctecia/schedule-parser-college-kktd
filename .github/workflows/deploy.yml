@@ -21,19 +21,19 @@ jobs:
           key: ${{ secrets.VPS_KEY }}
           script: |
             echo "📁 Подгружаем окружение"
-            source ~/.bashrc
-
+            export PATH=/root/.nvm/versions/node/v22.18.0/bin:/root/.local/share/pnpm:$PATH
+            
             echo "📁 Переход в директорию проекта"
             cd ~/projects/schedule-parser-college-kktd
             git fetch origin main
             git reset --hard origin/main
             git clean -fd
-
+            
             echo "📦 Установка зависимостей"
             pnpm install --frozen-lockfile
-
+            
             echo "🛠 Сборка проекта"
             pnpm build
-
-            pm2 restart kktdbot
-            pm2 status
+            
+            /root/.local/share/pnpm/pm2 restart kktdbot
+            /root/.local/share/pnpm/pm2 status
