@@ -3,6 +3,13 @@ import { Lesson, Schedule, ScheduleType, DayLessons } from '@/src/types/schedule
 import { formatText } from '@/src/utils/format-text.js';
 import { getTimeForLesson } from '@/src/utils/lesson-time.js';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const fontPath = path.resolve(__dirname, '../fonts/Arial.ttf');
+registerFont(fontPath, { family: 'Arial' });
 
 const cfg = {
     backgroundColor: '#dedede',
@@ -13,9 +20,6 @@ const cfg = {
     borderRadius: 12,
     scale: 3, // for Retina
 };
-
-const fontPath = path.resolve(__dirname, '../fonts/Arial.ttf');
-registerFont(fontPath, { family: 'Arial' });
 
 function calcDayHeight(day: DayLessons) {
     let height = 0;
