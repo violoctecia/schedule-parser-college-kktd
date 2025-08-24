@@ -22,7 +22,7 @@ jobs:
           script: |
 
             echo "📁 Переход в директорию проекта"
-            cd /projects/schedule-parser-college-kktd
+            cd ~/projects/schedule-parser-college-kktd
             git fetch origin main
             git reset --hard origin/main
             git clean -fd
