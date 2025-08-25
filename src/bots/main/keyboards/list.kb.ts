@@ -24,8 +24,8 @@ export function listKb<T>(type: ScheduleType, items: T[], page: number, pageSize
 
     const navKeyboard = new InlineKeyboard();
 
+    if (!isGroupChat) navKeyboard.text('🏠 Назад', `home`).row();
     if (page > 0) navKeyboard.text('⬅️ Назад', `page_${type}_${page - 1}`);
-    if (!isGroupChat) navKeyboard.text('🏠 Назад', `home`);
     if (end < items.length) navKeyboard.text('Вперед ➡️', `page_${type}_${page + 1}`);
 
     kb.append(navKeyboard);

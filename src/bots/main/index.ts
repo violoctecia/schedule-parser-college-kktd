@@ -18,10 +18,9 @@ bot.use(session({ initial }));
 bot.use(
     limit({
         timeFrame: 1000,
-        limit: 1,
+        limit: 5,
         onLimitExceeded: async (ctx) => {
             console.log('LIMIT EXCEEDED', ctx.from?.id);
-            await ctx.reply('⏳ Слишком часто! Подожди немного.');
         },
         keyGenerator: (ctx) => ctx.chat?.id.toString(),
     }),
