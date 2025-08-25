@@ -11,7 +11,6 @@ export default defineConfig([
         extends: ['js/recommended'],
         languageOptions: { globals: globals.browser },
         rules: {
-            // включаем автоформатирование через prettier
             'prettier/prettier': 'error',
         },
     },

@@ -30,7 +30,7 @@ export async function listTypeMenu(ctx: UserContext, page = 0, type: ScheduleTyp
         type,
         sorted,
         page,
-        6,
+        8,
         (item) => item.normalizedValue,
         (item) => item.id,
         isGroupChat,

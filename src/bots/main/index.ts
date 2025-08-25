@@ -1,10 +1,11 @@
-import { Bot, GrammyError, HttpError, session } from 'grammy';
+import { Bot, session } from 'grammy';
 import { UserContext, UserSessionData } from '@/src/types/bot.js';
 import { cfg } from '@/src/config.js';
 import { registerCallbacks } from '@/src/bots/main/callbacks.js';
 import { handleManualInput } from '@/src/bots/main/utils/manual-input.js';
 import { notifyAdmins } from '@/src/bots/admin/index.js';
 import { selectTypeKb } from '@/src/bots/main/keyboards/select-type.kb.js';
+import { limit } from '@grammyjs/ratelimiter';
 
 export const bot = new Bot<UserContext>(cfg.botToken);
 
@@ -13,6 +14,18 @@ function initial(): UserSessionData {
 }
 
 bot.use(session({ initial }));
+
+bot.use(
+    limit({
+        timeFrame: 1000,
+        limit: 1,
+        onLimitExceeded: async (ctx) => {
+            console.log('LIMIT EXCEEDED', ctx.from?.id);
+            await ctx.reply('⏳ Слишком часто! Подожди немного.');
+        },
+        keyGenerator: (ctx) => ctx.chat?.id.toString(),
+    }),
+);
 
 bot.api.config.use((prev, method, payload) =>
     prev(method, {
@@ -56,23 +69,8 @@ bot.on('my_chat_member', async (ctx) => {
 });
 
 bot.catch((err) => {
-    const ctx = err.ctx;
-    console.error(`‼️ Error while handling update ${ctx.update.update_id}:`);
     const e = err.error;
     console.log(e);
-    if (e instanceof GrammyError) {
-        console.error('‼️ Error in request:', e.description);
-    } else if (e instanceof HttpError) {
-        console.error('‼️ Could not contact Telegram:', e);
-    } else {
-        console.error('‼️ Unknown error:', e);
-    }
-
-    // if (ctx.chatId) {
-    //     ctx.api.sendMessage(ctx.chatId, 'Кажется что-то пошло не так... Нам уже известна эта ошибка и в ближайшее время она будет исправлена, а пока можете начать заново.', {
-    //         reply_markup: new InlineKeyboard().text('Продолжить ▶️', 'select_flow_type'),
-    //     });
-    // }
 
     notifyAdmins('❌ Ошибка в основном боте:\n' + JSON.stringify(e));
 });
