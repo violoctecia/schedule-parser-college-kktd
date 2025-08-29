@@ -8,7 +8,7 @@ import { cacheService } from '@/src/services/cache.service.js';
 
 const startPoints = {
     groups: 'F6',
-    weekDays: 'A6',
+    weekDays: 'A9',
     lessonNumbersCol: 'B',
     subgroupsRow: 9,
     weekName: 'A2',
@@ -196,8 +196,8 @@ class TableService {
 
         const firstValue = this.cellInfo(`${group.startCol}${day.startRow}`, 0, 0);
         const secondValue = this.cellInfo(`${group.startCol}${day.startRow}`, 3, 1);
-        // Проверка на полный день для группы, если день полный - учителя нет (ГОСУДАРСТВЕННАЯ ИТОГОВАЯ АТТЕСТАЦИЯ, и т.д.)
 
+        // Проверка на полный день для группы, если день полный - учителя нет (ГОСУДАРСТВЕННАЯ ИТОГОВАЯ АТТЕСТАЦИЯ, и т.д.)
         if (firstValue?.startAddress && firstValue?.startAddress === secondValue?.startAddress) {
             const lesson: Lesson = {
                 number: 1,
