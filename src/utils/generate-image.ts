@@ -120,7 +120,7 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
 
         const time = getTimeForLesson(numberOfLesson, lessons[0].group, lessons[0].day);
         setText(ctx, '14px Arial', cfg.secondTextColor, 'center');
-        ctx.fillText(time.start, 80, currentY + 0.5); // время
+        ctx.fillText(time.start, 80, currentY - 0.5); // время
         ctx.fillText(time.end, 80, currentY + 18);
 
         setText(ctx, '16px Arial', cfg.textColor, 'start');

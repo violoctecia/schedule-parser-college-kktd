@@ -83,7 +83,7 @@ export async function notifyAdmins(message: string) {
 
 export function startAdminBot() {
     bot.start();
-    notifyAdmins('📢 Уведомление: Бот успешно перезапустился на сервере.')
+    notifyAdmins('📢 Уведомление: Бот успешно перезапустился на сервере.');
     console.log('✅ Admin bot started');
 
     // Каждый вечер субботы в 20:00 по МСК

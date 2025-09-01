@@ -41,7 +41,7 @@ const times = {
             3: '11:30 - 12:50',
             4: '13:00 - 14:20',
             5: '14:30 - 15:50',
-        }
+        },
     },
 };
 
@@ -53,8 +53,8 @@ export function getTimeForLesson(lessonNumber: number, group: string, day: strin
     let dayKey = day.split(' ')[0];
     if (dayKey.toLowerCase() === 'понедельник') {
         dayKey = 'monday';
-    } else if (dayKey.toLowerCase() === 'суббота'){
-        dayKey = 'saturday'
+    } else if (dayKey.toLowerCase() === 'суббота') {
+        dayKey = 'saturday';
     } else {
         dayKey = 'other';
     }

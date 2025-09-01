@@ -1,10 +1,12 @@
-import { Bot, InlineKeyboard } from 'grammy';
+import { Bot, InlineKeyboard, InputFile } from 'grammy';
 import { mainKeyboard } from '@/src/bots/admin/keyboards/main.kb.js';
 import { showWeekTitleList } from '@/src/bots/admin/menus/week-titles.menu.js';
 import { icons } from '@/src/bots/admin/icons.js';
 import { scheduleService } from '@/src/database/schedule/schedule.service.js';
 import { SchedulePosition } from '@/src/types/schedule.js';
 import { sendNextSchedule } from '@/src/bots/main/utils/notification.js';
+import { botChatsService } from '@/src/database/bot/bot-chats.service.js';
+import { cacheService } from '@/src/services/cache.service.js';
 
 export function registerAdminCallbacks(bot: Bot) {
     bot.callbackQuery('menu', async (ctx) => {
@@ -36,6 +38,31 @@ export function registerAdminCallbacks(bot: Bot) {
         await ctx.editMessageText('Отправка уведомлений о следующем расписании, пожалуйста, подождите...');
         const stats = await sendNextSchedule();
         await ctx.reply(`${JSON.stringify(stats)}`, mainKeyboard);
+        await ctx.answerCallbackQuery();
+    });
+
+    bot.callbackQuery('check', async (ctx) => {
+        const users = await botChatsService.getAll();
+
+        for (const user of users) {
+            const schedule = user.schedule;
+            if (!schedule) continue;
+
+            const images = await cacheService.getImage(schedule.type, schedule.key, 'new');
+
+            if (images) {
+                const mediaGroup = images.buffers.map((buf) => ({
+                    type: 'photo' as const,
+                    media: new InputFile(buf),
+                    parse_mode: 'HTML' as const,
+                }));
+
+                await ctx.replyWithMediaGroup(mediaGroup);
+            }
+        }
+
+        await ctx.reply(`🧑‍💻 Главное меню`, mainKeyboard);
+        await ctx.answerCallbackQuery();
     });
 
     bot.callbackQuery('upload_schedule', async (ctx) => {
