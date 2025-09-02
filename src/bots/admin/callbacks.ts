@@ -7,6 +7,7 @@ import { SchedulePosition } from '@/src/types/schedule.js';
 import { sendNextSchedule } from '@/src/bots/main/utils/notification.js';
 import { botChatsService } from '@/src/database/bot/bot-chats.service.js';
 import { cacheService } from '@/src/services/cache.service.js';
+import { BotChat } from '@/src/types/bot.js';
 
 export function registerAdminCallbacks(bot: Bot) {
     bot.callbackQuery('menu', async (ctx) => {
@@ -44,12 +45,20 @@ export function registerAdminCallbacks(bot: Bot) {
     bot.callbackQuery('check', async (ctx) => {
         const users = await botChatsService.getAll();
 
+        const uniqueUsersSchedule = new Map<string, NonNullable<BotChat['schedule']>>();
+
         for (const user of users) {
             const schedule = user.schedule;
-            if (!schedule) continue;
+            if (!schedule || !schedule.key || !schedule.type || !schedule.normalizedValue) continue;
 
+            const key = `${schedule.type}:${schedule.key}`;
+            if (!uniqueUsersSchedule.has(key)) {
+                uniqueUsersSchedule.set(key, schedule);
+            }
+        }
+
+        for (const schedule of uniqueUsersSchedule.values()) {
             const images = await cacheService.getImage(schedule.type, schedule.key, 'new');
-
             if (images) {
                 const mediaGroup = images.buffers.map((buf) => ({
                     type: 'photo' as const,
@@ -62,6 +71,44 @@ export function registerAdminCallbacks(bot: Bot) {
         }
 
         await ctx.reply(`🧑‍💻 Главное меню`, mainKeyboard);
+        await ctx.answerCallbackQuery();
+    });
+
+    bot.callbackQuery('stats', async (ctx) => {
+        const users = await botChatsService.getAll();
+
+        const total = users.length;
+        const totalPrivate = users.filter((u) => u.chatType === 'private').length;
+        const totalGroups = users.filter((u) => u.chatType !== 'private').length;
+
+        // const allParams = new Set()
+        //
+        // users.forEach(u => {
+        //     if (!allParams.has(u.schedule?.normalizedValue)) {
+        //         allParams.add(u.schedule?.normalizedValue)
+        //     }
+        // })
+
+        const allParamsWithCount = new Map<string, number>();
+
+        users.forEach((u) => {
+            const uParam = u.schedule?.normalizedValue;
+            if (!uParam) return;
+
+            allParamsWithCount.set(uParam, (allParamsWithCount.get(uParam) ?? 0) + 1);
+        });
+
+        const text = `<b>Всего чатов:</b> ${total}
+<b>Всего приватных чатов:</b> ${totalPrivate}
+<b>Всего групповых чатов:</b> ${totalGroups}
+
+<b>Выбранные параметры:</b>
+${Array.from(allParamsWithCount.entries())
+    .map(([param, count]) => `${param}: <b>${count}</b>`)
+    .join('\n')}
+`;
+
+        await ctx.editMessageText(text, mainKeyboard);
         await ctx.answerCallbackQuery();
     });
 
