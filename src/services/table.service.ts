@@ -7,11 +7,11 @@ import { keysService } from '@/src/database/keys/keys.service.js';
 import { cacheService } from '@/src/services/cache.service.js';
 
 const startPoints = {
-    groups: 'F6',
+    groups: 'F7',
     weekDays: 'A9',
     lessonNumbersCol: 'B',
-    subgroupsRow: 9,
-    weekName: 'A2',
+    subgroupsRow: 8,
+    weekName: 'A3',
 };
 
 class TableService {
