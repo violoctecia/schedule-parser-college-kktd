@@ -1,4 +1,5 @@
-type DayType = 'monday' | 'other';
+type DayType = 'monday' | 'other' | 'saturday';
+
 type CategoryType = 'juniors' | 'seniors';
 
 const times = {
@@ -17,6 +18,13 @@ const times = {
             4: '13:30 - 14:50',
             5: '15:30 - 16:50',
             6: '17:00 - 18:20',
+        },
+        saturday: {
+            1: '08:30 - 09:50',
+            2: '10:00 - 11:20',
+            3: '11:30 - 12:50',
+            4: '13:00 - 14:20',
+            5: '14:30 - 15:50',
         },
     },
     juniors: {
