@@ -6,12 +6,27 @@ import { Key } from '@/src/types/keys.js';
 import { keysService } from '@/src/database/keys/keys.service.js';
 import { cacheService } from '@/src/services/cache.service.js';
 
+// Стартовые маркеры (autoDetectStartPoints перезапишет их при парсинге), указаны фоллбеки если autoDetectStartPoints не найдет совпадения
 const startPoints = {
-    groups: 'F6',
-    weekDays: 'A8',
-    lessonNumbersCol: 'B',
-    subgroupsRow: 7,
+    //название расписания
     weekName: 'A2',
+
+    //группы
+    groupsCol: 'F',
+    groupsRow: 6,
+    get groups() {
+        return this.groupsCol + this.groupsRow;
+    },
+
+    //дни недели
+    weekDaysCol: 'A',
+    weekDaysRow: 8,
+    get weekDays() {
+        return this.weekDaysCol + this.weekDaysRow;
+    },
+
+    //номера занятий
+    lessonNumbersCol: 'B',
 };
 
 class TableService {
@@ -69,12 +84,90 @@ class TableService {
             }
         }
 
+        this.autoDetectStartPoints();
+
         const now = new Date();
         const formatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long' });
-
         this.weekTitle = this.cellInfo(startPoints.weekName, 0, 0)?.value || formatter.format(now);
 
         return await this.fullParse();
+    }
+
+    private autoDetectStartPoints(): void {
+        const weekDaysCell = this.findCellByText('день недели');
+
+        if (weekDaysCell) {
+            startPoints.weekDaysCol = weekDaysCell.startCol;
+            console.log(`start point weekDaysCol discovered ${weekDaysCell.startCol}`);
+            let rowOffset = 1;
+            // поиск начальной ячейки дней недель
+            while (true) {
+                const cell = this.cellInfo(weekDaysCell.endAddress, 0, rowOffset);
+                if (cell?.value) {
+                    startPoints.weekDaysRow = cell.startRow;
+                    console.log(`start point weekDaysRow discovered ${cell.startRow}`);
+                    break;
+                }
+                rowOffset++;
+            }
+
+            const lessonsCol = this.cellInfo(weekDaysCell.endAddress, 1, 0)?.startCol;
+            if (lessonsCol) {
+                startPoints.lessonNumbersCol = lessonsCol;
+                console.log(`start point lessonNumbersCol discovered ${lessonsCol}`);
+            }
+
+            rowOffset = -1;
+            while (true) {
+                const cell = this.cellInfo(weekDaysCell.startAddress, 0, rowOffset);
+                if (cell?.value) {
+                    startPoints.weekName = cell.startAddress;
+                    console.log(`start point weekName discovered ${cell.startAddress}`);
+                    break;
+                }
+                rowOffset--;
+            }
+        }
+
+        const firstGroupCell = this.findCellByText('преподаватель');
+        if (firstGroupCell) {
+            startPoints.groupsRow = firstGroupCell.startRow + 1;
+            console.log(`start point groupsRow discovered ${startPoints.groupsRow}`);
+            startPoints.groupsCol = firstGroupCell.startCol;
+            console.log(`start point groupsCol discovered ${firstGroupCell.startCol}`);
+        }
+    }
+
+    private findCellByText(search: string, exact = true): CellInfo | null {
+        for (const [addr, raw] of Object.entries(this.table)) {
+            if (raw === undefined || raw === null) continue;
+
+            const text = String(raw).trim().toLowerCase().replace(/\s+/g, ' ');
+            const target = search.trim().toLowerCase();
+
+            if (exact ? text === target : text.includes(target)) {
+                const masterAddr = this.mergedMap.get(addr) || addr;
+                const { c, r } = XLSX.utils.decode_cell(masterAddr);
+                const startCol = XLSX.utils.encode_col(c);
+                const startRow = r + 1;
+
+                let endAddress = masterAddr;
+                const merge = this.merges.find((m) => m.s.c === c && m.s.r === r);
+                if (merge) {
+                    endAddress = XLSX.utils.encode_cell({ c: merge.e.c, r: merge.e.r });
+                }
+
+                return {
+                    value: String(raw),
+                    startAddress: masterAddr,
+                    endAddress,
+                    startCol,
+                    startRow,
+                };
+            }
+        }
+
+        return null;
     }
 
     private cellInfo(address: string, colOffset = 0, rowOffset = 0): CellInfo | null {

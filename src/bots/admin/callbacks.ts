@@ -70,7 +70,7 @@ export function registerAdminCallbacks(bot: Bot) {
             }
         }
 
-        await ctx.reply(`🧑‍💻 Главное меню`, mainKeyboard);
+        await ctx.reply(`Картинки сгенерированы`, mainKeyboard);
         await ctx.answerCallbackQuery();
     });
 
