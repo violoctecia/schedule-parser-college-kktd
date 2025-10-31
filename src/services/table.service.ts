@@ -109,6 +109,11 @@ class TableService {
                     break;
                 }
                 rowOffset++;
+                if (rowOffset > 20) {
+                    // Добавлена защита от бесконечного цикла
+                    console.log('⚠️  Не удалось найти weekDaysRow за 20 попыток');
+                    break;
+                }
             }
 
             const lessonsCol = this.cellInfo(weekDaysCell.endAddress, 1, 0)?.startCol;
@@ -118,6 +123,7 @@ class TableService {
             }
 
             rowOffset = -1;
+            let attempts = 0;
             while (true) {
                 const cell = this.cellInfo(weekDaysCell.startAddress, 0, rowOffset);
                 if (cell?.value) {
@@ -126,6 +132,12 @@ class TableService {
                     break;
                 }
                 rowOffset--;
+                attempts++;
+                if (attempts > 20) {
+                    // Добавлена защита от бесконечного цикла
+                    console.log('⚠️  Не удалось найти weekName за 20 попыток, используем значение по умолчанию');
+                    break;
+                }
             }
         }
 
