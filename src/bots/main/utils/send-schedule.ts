@@ -72,6 +72,7 @@ export async function sendSchedule(
     };
 
     const images = await cacheService.getImage(type, value, position);
+    console.log('[sendSchedule] getImage done, hasImages:', !!images, images?.buffers?.length ?? 0);
 
     if (isCallback) {
         await ctx.editMessageText('Еще немного...');
@@ -93,7 +94,14 @@ export async function sendSchedule(
         parse_mode: 'HTML' as const,
     }));
 
-    await ctx.replyWithMediaGroup(mediaGroup);
+    console.log('[sendSchedule] sending mediaGroup, parts:', mediaGroup.length);
+    try {
+        await ctx.replyWithMediaGroup(mediaGroup);
+        console.log('[sendSchedule] replyWithMediaGroup ok');
+    } catch (err) {
+        console.error('[sendSchedule] replyWithMediaGroup failed:', err);
+        throw err;
+    }
     const text = `☝️ ${sendScheduleText[position][type]} <b>${normalizedValue}</b> ${images.weekTitle}`;
 
     await ctx.reply(text, isGroupChat ? {} : { reply_markup: finalKb });
