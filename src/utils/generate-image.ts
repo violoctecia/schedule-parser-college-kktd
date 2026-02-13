@@ -18,7 +18,7 @@ const cfg = {
     secondTextColor: '#757573',
     lineColor: 'rgba(5, 5, 5, 0.1)',
     borderRadius: 12,
-    scale: 3, // for Retina
+    scale: 4, // for Retina
 };
 
 function calcDayHeight(day: DayLessons) {
