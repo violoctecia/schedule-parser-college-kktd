@@ -10,5 +10,5 @@ export const cfg = {
     botAdminToken: process.env.BOT_ADMIN_TOKEN,
     adminChatIds: process.env.ADMIN_CHAT_IDS?.split(','),
     mongoURI: process.env.MONGO_URI,
-    imageMaxCacheSize: 40 * 1024 * 1024, // 40 МБ
+    imageMaxCacheSize: process.env.IMAGE_MAX_CACHE_SIZE ? parseInt(process.env.IMAGE_MAX_CACHE_SIZE) : 40 * 1024 * 1024, // 40 МБ
 };
