@@ -43,20 +43,20 @@ export function registerCallbacks(bot: Bot<UserContext>) {
 
     // Show Schedule
     bot.callbackQuery(/select_.+/, async (ctx) => {
+        await ctx.answerCallbackQuery();
         const data = ctx.callbackQuery.data;
         const [, type, value] = data.split('_');
 
         await sendSchedule(ctx, type as ScheduleType, value, 'current', true);
-        await ctx.answerCallbackQuery();
     });
 
     // Change Schedule Position
     bot.callbackQuery(/schedule_+/, async (ctx) => {
+        await ctx.answerCallbackQuery();
         const data = ctx.callbackQuery.data;
         const [, position, type, value] = data.split('_');
 
         await sendSchedule(ctx, type as ScheduleType, value, position as Extract<SchedulePosition, 'current' | 'new'>);
-        await ctx.answerCallbackQuery();
     });
 
     // Remember/Forgot Selection

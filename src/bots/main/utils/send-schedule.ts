@@ -71,13 +71,13 @@ export async function sendSchedule(
         }
     };
 
+    const images = await cacheService.getImage(type, value, position);
+
     if (isCallback) {
         await ctx.editMessageText('Еще немного...');
     } else {
         await ctx.api.editMessageText(sent!.chat.id, sent!.message_id, 'Еще немного...');
     }
-
-    const images = await cacheService.getImage(type, value, position);
 
     if (!images) {
         await deleteMessage();

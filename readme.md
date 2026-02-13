@@ -9,6 +9,8 @@ or
 1. docker build -t schedule-bot .
 2. docker run --env-file .env schedule-bot
 
+docker run -d --name schedule-bot --restart unless-stopped --env-file .env schedule-bot
+
 ### Configuration
 - Copy and setup `.env` file from `.env.example`
 - Configure lesson times in 'times' object in `src/utils/lesson-time.ts`
