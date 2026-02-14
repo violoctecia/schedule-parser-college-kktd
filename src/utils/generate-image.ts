@@ -91,7 +91,9 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
     const width = 800 * cfg.scale;
     const height = calcImageHeight() * cfg.scale;
 
-    const canvas = createCanvas(width, height);
+    const MIN_HEIGHT = 256;
+    const safeHeight = Math.max(height, MIN_HEIGHT);
+    const canvas = createCanvas(width, safeHeight);
     const ctx: CanvasRenderingContext2D = canvas.getContext('2d');
 
     ctx.scale(cfg.scale, cfg.scale);
