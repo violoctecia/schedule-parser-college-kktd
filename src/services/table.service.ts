@@ -373,7 +373,7 @@ class TableService {
             // Одна подгруппа, один урок - пушим один объект
             if (
                 subgroup1Lesson?.startAddress === subgroup2Lesson?.startAddress ||
-                (!subgroup2Lesson?.value && this.cellInfo(`${group.startCol}${row}`, 1, 0)?.value === this.cellInfo(`${group.startCol}${row}`, 0, 0)?.value)
+                (!subgroup2Lesson?.value && this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value === this.cellInfo(`${group.startCol}${row}`, 1, 1)?.value)
             ) {
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
                 teacherKey = await this.setIdToTeacher(teacher);
