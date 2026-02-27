@@ -56,7 +56,7 @@ class CacheService {
         const schedule = await scheduleService.getScheduleBy(position, typeMap[type], value);
         if (!schedule || typeof schedule === 'string') return null;
 
-        const scheduleParts = this.splitSchedule(schedule as Schedule, 30);
+        const scheduleParts = this.splitSchedule(schedule as Schedule, 25);
 
         for (let i = 0; i < scheduleParts.length; i++) {
             const part = scheduleParts[i];
@@ -101,7 +101,7 @@ class CacheService {
         this.cacheSize += size;
     }
 
-    private splitSchedule(schedule: Schedule, maxLessonsPerPart: number = 18): Schedule[] {
+    private splitSchedule(schedule: Schedule, maxLessonsPerPart: number = 25): Schedule[] {
         const days = Object.entries(schedule);
         const totalLessons = days.reduce((acc, [, dayLessons]) => acc + Object.values(dayLessons).reduce((a, l) => a + l.length, 0), 0);
 
