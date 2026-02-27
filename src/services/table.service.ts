@@ -371,7 +371,7 @@ class TableService {
             if (!subgroup1Lesson?.value && !subgroup2Lesson?.value) continue;
 
             // Одна подгруппа, один урок - пушим один объект
-            if (subgroup1Lesson?.startAddress === subgroup2Lesson?.startAddress) {
+            if (subgroup1Lesson?.startAddress === subgroup2Lesson?.startAddress || (subgroup2Lesson?.value === '' && this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value)) {
                 teacher = this.cellInfo(`${group.startCol}${row}`, 0, 1)?.value || '';
                 teacherKey = await this.setIdToTeacher(teacher);
                 audience = this.cellInfo(`${group.startCol}${row}`, 3, 0)?.value || '';

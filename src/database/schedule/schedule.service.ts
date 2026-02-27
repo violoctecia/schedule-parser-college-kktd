@@ -32,6 +32,7 @@ export const scheduleService = {
             return { weekTitle: weekSchedule.weekTitle };
         }
 
+        console.log(weekSchedule.lessons);
         const filteredLessons = weekSchedule!.lessons.filter((lesson) => lesson[param] === value);
 
         const grouped: Schedule = {};
