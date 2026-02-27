@@ -224,7 +224,16 @@ class TableService {
             const newGroup = this.cellInfo(startPoints.groups, currentColOffset, 0);
             if (!newGroup?.value) break;
             this.groups.push(newGroup);
-            currentColOffset += 5;
+            const startCol = XLSX.utils.decode_cell(newGroup.startAddress).c;
+            const endCol = XLSX.utils.decode_cell(newGroup.endAddress).c;
+            const groupWidth = endCol - startCol + 1;
+            currentColOffset += groupWidth;
+
+            for (let i = 0; i < 5; i++) {
+                const next = this.cellInfo(startPoints.groups, currentColOffset, 0);
+                if (next?.value) break;
+                currentColOffset += 1;
+            }
         }
     }
 
