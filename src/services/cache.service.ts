@@ -101,7 +101,7 @@ class CacheService {
         this.cacheSize += size;
     }
 
-    private splitSchedule(schedule: Schedule, maxLessonsPerPart: number = 22): Schedule[] {
+    private splitSchedule(schedule: Schedule, maxLessonsPerPart: number = 18): Schedule[] {
         const days = Object.entries(schedule);
         const totalLessons = days.reduce((acc, [, dayLessons]) => acc + Object.values(dayLessons).reduce((a, l) => a + l.length, 0), 0);
 
