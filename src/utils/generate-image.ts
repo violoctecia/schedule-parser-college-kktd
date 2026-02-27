@@ -91,9 +91,10 @@ export async function generateImage(data: Schedule, type: ScheduleType): Promise
     const width = 800 * cfg.scale;
     const height = calcImageHeight() * cfg.scale;
 
-    const MIN_HEIGHT = 256;
-    const safeHeight = Math.max(height, MIN_HEIGHT);
-    const canvas = createCanvas(width, safeHeight);
+    const MIN_DIM = 128; // минимум для Telegram
+    const safeWidth = Math.max(width, MIN_DIM);
+    const safeHeight = Math.max(height, MIN_DIM);
+    const canvas = createCanvas(safeWidth, safeHeight);
     const ctx: CanvasRenderingContext2D = canvas.getContext('2d');
 
     ctx.scale(cfg.scale, cfg.scale);
